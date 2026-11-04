@@ -50,17 +50,29 @@ def _has_authenticated_flow_cookies(cookies: list[dict[str, Any]]) -> bool:
     return has_google_sid and has_flow_osid
 
 
+def _is_authenticated_project_url(url: str) -> bool:
+    return (
+        bool(url)
+        and "/project/" in url
+        and "/about" not in url
+        and "accounts.google.com" not in url
+    )
+
+
 async def export_from_windows_gflow_profile(
     profile_dir: Path,
     out_json_path: Path,
     proxy_url: str = DEFAULT_PROXY,
 ) -> dict[str, Any]:
-    """Open profile_default via FlowApiClient (patchright) or Chrome CDP and dump all Flow cookies."""
-    os.environ.setdefault("GFLOW_CLI_BROWSER_ENGINE", "patchright")
+    """Open profile_default in a visible window, ensure Google Flow login completes, and dump all cookies."""
+    os.environ["GFLOW_CLI_FLOW_HOST"] = "flow.google.com"
+    os.environ["GFLOW_CLI_AGENT_CONFIRM"] = "never"
+    os.environ["GFLOW_CLI_BROWSER_WINDOW_POSITION"] = "120,60"
+    os.environ["GFLOW_CLI_UPDATE_CHECK"] = "0"
     if proxy_url:
-        os.environ.setdefault("GFLOW_CLI_BROWSER_PROXY", proxy_url)
-        os.environ.setdefault("HTTPS_PROXY", proxy_url)
-        os.environ.setdefault("HTTP_PROXY", proxy_url)
+        os.environ["GFLOW_CLI_BROWSER_PROXY"] = proxy_url
+        os.environ["HTTPS_PROXY"] = proxy_url
+        os.environ["HTTP_PROXY"] = proxy_url
 
     cookies: list[dict[str, Any]] = []
     local_storage_data: dict[str, str] = {}
@@ -73,17 +85,47 @@ async def export_from_windows_gflow_profile(
         await page.goto(PROJECT_URL, wait_until="domcontentloaded", timeout=60000)
         await asyncio.sleep(5.0)
 
-        for wait_step in range(36):
+        clicked_sign_in = False
+        for wait_step in range(60):
             final_url = page.url
-            if "/project/" in final_url and "/about" not in final_url and "accounts.google.com" not in final_url:
+            if _is_authenticated_project_url(final_url):
+                print(f"[Flow Export] Authenticated Flow project URL confirmed: {final_url}", flush=True)
+                await asyncio.sleep(4.0)
                 break
-            if wait_step == 0:
+
+            if "/about" in final_url and not clicked_sign_in:
                 print(
-                    f"[Flow Export] Browser redirected to {final_url}. "
-                    "Please complete Google sign-in in the opened browser window (waiting up to 180s)...",
+                    "[Flow Export] Landed on https://flow.google.com/about (session signed out). "
+                    "Clicking 'Create with Google Flow' to open Google Sign-In...",
+                    flush=True,
+                )
+                try:
+                    await page.evaluate(
+                        """() => {
+                            const btn = Array.from(document.querySelectorAll('button, a')).find(
+                                el => /Create with Google Flow|Try in Google Flow|Sign in/i.test(el.innerText || '')
+                            );
+                            if (btn) btn.click();
+                        }"""
+                    )
+                    clicked_sign_in = True
+                except Exception:
+                    pass
+
+            if wait_step % 3 == 0:
+                print(
+                    f"[Flow Export] Waiting for Google Sign-In in the browser window (current URL: {final_url})...",
                     flush=True,
                 )
             await asyncio.sleep(5.0)
+
+        final_url = page.url
+        if not _is_authenticated_project_url(final_url):
+            raise RuntimeError(
+                f"Browser is still not authenticated on Google Flow (final_url={final_url!r}). "
+                "Please complete sign-in for reyzorray@gmail.com in the browser window so it opens "
+                f"{PROJECT_URL}, then re-run export_flow_session_bundle.py."
+            )
 
         ctx_cookies = await page.context.cookies()
         cookies.extend(ctx_cookies)
