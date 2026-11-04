@@ -1,0 +1,139 @@
+{
+  "version": "1.0.0",
+  "created_at": "2026-11-03T05:29:51.039998+00:00",
+  "updated_at": "2026-11-03T05:34:22.648018+00:00",
+  "overall_status": "completed",
+  "current_stage": "COMPLETED",
+  "completed_stages": [
+    "STAGE_1_DATASET",
+    "STAGE_2_PROMPT_MATRIX",
+    "STAGE_3_GENERATION",
+    "STAGE_4_VERIFICATION",
+    "STAGE_5_MIRRORING"
+  ],
+  "config": {
+    "resume": false,
+    "dry_run": false,
+    "mock": false,
+    "clips": "2",
+    "duration": 4,
+    "output_dir": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output",
+    "checkpoint_file": null,
+    "log_file": null,
+    "mirror_dir": "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f",
+    "proxy": "http://127.0.0.1:7890",
+    "max_retries": 3,
+    "force": true
+  },
+  "dataset_status": {
+    "valid": true,
+    "total_frames": 56,
+    "total_pairs": 11,
+    "dataset_name": "Veo Arcane Style Benchmark Dataset",
+    "verified_at": "2026-11-03T05:29:51.046004+00:00"
+  },
+  "prompt_matrix": [
+    {
+      "pair_id": "pair_170629_shot_000",
+      "character": "Vi",
+      "palette": "magenta_cyan_chiaroscuro",
+      "first_frame_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\dataset\\pairs\\pair_170629_shot_000\\first_frame.png",
+      "last_frame_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\dataset\\pairs\\pair_170629_shot_000\\last_frame.png",
+      "mid_impact_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\dataset\\pairs\\pair_170629_shot_000\\mid_impact.png",
+      "prompt": "Make me a video in a 16:9 aspect ratio: Hand-painted Fortiche Production Arcane 2.5D animation style. Featuring Vi, use generate_video_with_interpolation with the first attached image as start_image_media_id and the second attached image as end_image_media_id. Continuous slow-motion interpolation in a locked static tight close-up camera framing; the camera never zooms out, never pans, and never changes angle. Her shoulders, upper arms, and elbows are out of frame below the bottom edge and are never shown (her arms are human, only the gauntlets on her hands are mechanical). In the immediate foreground, only the upper sections of her two oversized mechanical gauntlets are visible: four circular metallic piston rings on the left gauntlet in the lower-left corner, and four rectangular steel knuckle plates on the right gauntlet in the center-right pressing against the vertical magenta glow. From 0.0s to 8.0s, both foreground mechanical gauntlets stay locked in the exact same position in front of her chin without disappearing or moving out of place, while her face in the center transitions smoothly from clenched teeth in dark shadow to an open-mouthed battle cry illuminated by bright golden-orange friction sparks erupting around the gauntlet knuckles. Visible textured digital brushwork, tactile gouache and oil impasto strokes, matte painted concept art background, graphic novel depth with sharp illustrated line-art accents. Extreme chiaroscuro contrast, dramatic dual-tone rim lighting (magenta_cyan_chiaroscuro), volumetric atmospheric haze, and glowing particle embers. Cinematic sweeping camera tracking along the action vector, shallow depth of field with soft background bokeh. Strictly avoid photorealism, avoid live-action defects, avoid 3D plastic CG sheen, avoid uncanny valley wax skin, avoid flat cartoon shading, avoid speech bubbles, avoid text overlays, avoid watermarks, avoid frame judder, avoid distorted hands.",
+      "target_output_name": "arcane_clip_01_zaun_duel_720p.mp4",
+      "target_output_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\arcane_clip_01_zaun_duel_720p.mp4"
+    },
+    {
+      "pair_id": "pair_270000_shot_015",
+      "character": "Jinx",
+      "palette": "magenta_cyan_chiaroscuro",
+      "first_frame_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\dataset\\pairs\\pair_270000_shot_015\\first_frame.png",
+      "last_frame_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\dataset\\pairs\\pair_270000_shot_015\\last_frame.png",
+      "mid_impact_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\dataset\\pairs\\pair_270000_shot_015\\mid_impact.png",
+      "prompt": "Make me a video in a 16:9 aspect ratio: Hand-painted Fortiche Production Arcane 2.5D animation style. Featuring Jinx, use generate_video_with_interpolation with the first attached image as start_image_media_id and the second attached image as end_image_media_id. Continuous slow-motion energy charge-up in a locked static side-profile camera framing; the camera never cuts and never changes angle. From 0.0s to 8.0s, the blue-haired woman remains in the exact same side-profile pose holding the massive shark-headed mechanical cannon steadily on her shoulder aimed toward the upper-left. The cannon NEVER fires a projectile, NEVER produces an orange fireball explosion, and NEVER leaves her shoulder during the clip. Instead, the entire 8-second sequence shows one smooth, uninterrupted internal reactor charge-up building toward maximum capacity: glowing cyan-white plasma and diagonal blue light rays originate from INSIDE the open shark jaws, internal barrel seams, and rear exhaust cone behind her back, radiating outward with steadily increasing intensity until the shark jaws hinge wider in a blinding cyan-white radial overcharge flare in the final frame while still held firmly on her shoulder. Visible textured digital brushwork, tactile gouache and oil impasto strokes, matte painted concept art background, graphic novel depth with sharp illustrated line-art accents. Extreme chiaroscuro contrast, dramatic dual-tone rim lighting (magenta_cyan_chiaroscuro), volumetric atmospheric haze, and glowing particle embers. Cinematic sweeping camera tracking along the action vector, shallow depth of field with soft background bokeh. Strictly avoid photorealism, avoid live-action defects, avoid 3D plastic CG sheen, avoid uncanny valley wax skin, avoid flat cartoon shading, avoid speech bubbles, avoid text overlays, avoid watermarks, avoid frame judder, avoid distorted hands.",
+      "target_output_name": "arcane_clip_02_piltover_hextech_720p.mp4",
+      "target_output_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\arcane_clip_02_piltover_hextech_720p.mp4"
+    }
+  ],
+  "clips": {
+    "pair_170629_shot_000": {
+      "status": "completed",
+      "attempts": 1,
+      "output_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\arcane_clip_01_zaun_duel_720p.mp4",
+      "duration": 4,
+      "native_audio": true,
+      "error": null,
+      "completed_at": "2026-11-03T05:32:14.523630+00:00"
+    },
+    "pair_270000_shot_015": {
+      "status": "completed",
+      "attempts": 1,
+      "output_path": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\arcane_clip_02_piltover_hextech_720p.mp4",
+      "duration": 4,
+      "native_audio": true,
+      "error": null,
+      "completed_at": "2026-11-03T05:34:21.460603+00:00"
+    }
+  },
+  "verification_report": {
+    "all_passed": true,
+    "total_clips": 2,
+    "verified_clips": 2,
+    "details": [
+      {
+        "valid": true,
+        "file_size_bytes": 2441834,
+        "width": 1280,
+        "height": 720,
+        "fps": 24.0,
+        "frame_count": 190,
+        "duration": 7.92,
+        "faststart": true,
+        "video_codec_h264": true,
+        "audio_codec_aac": true,
+        "native_audio": true,
+        "pair_id": "pair_170629_shot_000"
+      },
+      {
+        "valid": true,
+        "file_size_bytes": 3945162,
+        "width": 1280,
+        "height": 720,
+        "fps": 24.0,
+        "frame_count": 190,
+        "duration": 7.92,
+        "faststart": true,
+        "video_codec_h264": true,
+        "audio_codec_aac": true,
+        "native_audio": true,
+        "pair_id": "pair_270000_shot_015"
+      }
+    ],
+    "contact_sheets": [
+      "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\contact_sheets\\comparison_pair_170629_shot_000.png",
+      "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\contact_sheets\\comparison_pair_270000_shot_015.png"
+    ],
+    "master_contact_sheet": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\master_verification_sheet.png",
+    "generated_at": "2026-11-03T05:34:22.602398+00:00"
+  },
+  "mirror_status": {
+    "status": "completed",
+    "destination": "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f",
+    "copied_count": 11,
+    "copied_files": [
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\verification_report.json",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\logs\\overnight_batch.log",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\contact_sheets\\comparison_pair_170629_shot_000.png",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\arcane_clip_02_piltover_hextech_720p.mp4",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\contact_sheets\\comparison_pair_270000_shot_015.png",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\master_verification_sheet.png",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\verification_report.md",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\arcane_clip_01_zaun_duel_720p.mp4",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\prompt_matrix.json",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\manifest.json",
+      "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f\\overnight_checkpoint.json"
+    ],
+    "mirrored_at": "2026-11-03T05:34:22.642138+00:00"
+  }
+}

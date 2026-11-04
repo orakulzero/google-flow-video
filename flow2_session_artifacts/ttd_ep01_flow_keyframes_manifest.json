@@ -1,0 +1,231 @@
+{
+  "manifest_type": "ttd_ep01_flow_keyframes",
+  "total_keyframes": 12,
+  "failures_count": 0,
+  "all_passed": true,
+  "keyframes": [
+    {
+      "mae_bg": 0.0087,
+      "ssim_bg": 0.9999,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-01",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_01_keyframe.png",
+      "sha256": "ca5aee88780dae49d76d43f575662465ecd909b08c7d5ce9854e3dcf121d9180",
+      "cached": false,
+      "filename": "ttd_ep01_shot_01_keyframe.png",
+      "scene_title": "The Endurance Vigil (Officetel Setup)",
+      "duration_seconds": 3.5,
+      "characters": [
+        "Lee Tae-Seok (Classic Gamer Geek)"
+      ],
+      "positive_prompt": "Cinematic Fortiche Arcane brushwork meets anime background art, low-angle medium shot of Korean hardcore gamer Lee Tae-Seok in a dimly lit officetel room at night. Dual computer monitors cast cold cyan glow across his exhausted face, bloodshot eyes, and customized mechanical keyboard. Tangled braided cables, empty taurine energy drink cans, crusted ramyeon bowl on desk. Rain streaks on window glass behind Venetian blinds. High chiaroscuro contrast, atmospheric volumetric dust motes, tactile gouache texture."
+    },
+    {
+      "mae_bg": 0.0095,
+      "ssim_bg": 0.9996,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-02",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_02_keyframe.png",
+      "sha256": "24148fa8aee1de030534cf394f70a3fda87ccf07487191b9db2a93b0a8d7d865",
+      "cached": false,
+      "filename": "ttd_ep01_shot_02_keyframe.png",
+      "scene_title": "The Bastion of Ruin (Stage 50 Breach)",
+      "duration_seconds": 3.0,
+      "characters": [
+        "Evangeline (Fallen)",
+        "Lily (Fallen)",
+        "Garrison Levies (Fallen)"
+      ],
+      "positive_prompt": "Grand dark fantasy battlefield in Fortiche Arcane painterly style with Ufotable physical lighting, high-angle wide crane shot of the pulverized imperial bastion ramparts during a violent slanting rainstorm. 30-meter cyclopean dark volcanic basalt walls shattered into jagged stumps. Fallen garrison heroes in the foreground: Evangeline shattered golden aegis, blind sniper Lily broken composite arbalest half-submerged in blood-streaked rain puddles with shredded linen blindfold. Roaring pitch cauldrons spilled across flagstones, lightning flash illuminating churning Black Fog on horizon."
+    },
+    {
+      "mae_bg": 0.008,
+      "ssim_bg": 0.9997,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-03",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_03_keyframe.png",
+      "sha256": "02676cffea0aad253e506c10967fc02e54c9f8c30dbcb2a814899df5cc652fcb",
+      "cached": false,
+      "filename": "ttd_ep01_shot_03_keyframe.png",
+      "scene_title": "The Solitary Bulwark (Lucas Vanguard Stand)",
+      "duration_seconds": 3.5,
+      "characters": [
+        "Knight Lucas MacGregor"
+      ],
+      "positive_prompt": "Visceral dark fantasy 2.5D animation style of Fortiche Arcane blended with Manhwa intensity, low-angle 3/4 medium close-up of Vanguard Knight Lucas MacGregor standing alone on the breached basalt wall. Young prime age 23, dirty-blonde hair clotted with rain and soot whipping in the storm wind, weathered bronze-tan skin with three-furrow claw scar on left cheek. Battered blackened gunmetal plate armor with acid burns and deep gouges, frayed imperial navy tabard. Hand-and-a-half notched bastard sword held at guard. Natural steel-gray human irises catching warm amber torchlight reflections only, strictly zero glowing eyes and zero sparks on armor or sword."
+    },
+    {
+      "mae_bg": 0.0247,
+      "ssim_bg": 0.9985,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-04",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_04_keyframe.png",
+      "sha256": "50efb4e79601248f24a208b95dc2b4d5cb91f5b22883ce5039233cbbd499496f",
+      "cached": false,
+      "filename": "ttd_ep01_shot_04_keyframe.png",
+      "scene_title": "The Command Roar Climax (The 4-Shot Vanguard Sequence)",
+      "duration_seconds": 4.0,
+      "characters": [
+        "Knight Lucas MacGregor",
+        "Vanguard Spearmen (Silhouettes in Bokeh)"
+      ],
+      "positive_prompt": "Dynamic three-quarter (3/4) close-up camera pushing in 15% with a 12-degree Dutch tilt onto Vanguard Knight Lucas battle-scarred face as he unhinges his jaw into an authoritative roaring battle command CHARGE. Fortiche Arcane impasto brushwork with Ufotable physical lighting, dirty-blonde shaggy hair, weathered tan skin, left cheek claw scar. Natural steel-gray human irises with realistic torchlight reflections only, bloodshot sclera, zero glowing eyes, zero floating sparks on blackened steel armor or sword. Over 4 seconds his mouth bellows into cold condensation breath vapor and saliva mist in freezing rain. Over his shoulder in deep cinematic bokeh, blurred silhouettes of armored vanguard spearmen with iron spears and burning torches surge forward into the charge."
+    },
+    {
+      "mae_bg": 0.0094,
+      "ssim_bg": 0.9999,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-05",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_05_keyframe.png",
+      "sha256": "62fff032bc8559c4fc2fdcb5f6ec3cbc1a26f86a98f06f997da6a93102e77e0d",
+      "cached": false,
+      "filename": "ttd_ep01_shot_05_keyframe.png",
+      "scene_title": "Pyrrhic Victory & Gamer Collapse",
+      "duration_seconds": 3.5,
+      "characters": [
+        "Lee Tae-Seok (Classic Gamer Geek)"
+      ],
+      "positive_prompt": "Dark emotional cinematic shot in Fortiche Arcane painterly aesthetic, over-the-shoulder view of gamer Lee Tae-Seok weeping at his computer desk. Dual monitors illuminate his slumped frame: the screen flashes STAGE 50 CLEAR with 99.8% CASUALTIES and Knight Lucas standing alone in a black void. Tae-Seok forehead drops onto the mechanical keyboard in physiological and emotional collapse, trembling shoulders, tears catching blue monitor glow. Dim officetel room, empty cans, heavy shadow vignette."
+    },
+    {
+      "mae_bg": 0.03,
+      "ssim_bg": 0.9983,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-06",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_06_keyframe.png",
+      "sha256": "171cc3b973669f57e1ccded7c221439f975908c3639c05d6d2ab6f749dd3048d",
+      "cached": false,
+      "filename": "ttd_ep01_shot_06_keyframe.png",
+      "scene_title": "The Void & Sensory Awakening",
+      "duration_seconds": 3.0,
+      "characters": [
+        "Prince Ash Bornhater (Awakening)"
+      ],
+      "positive_prompt": "Atmospheric cinematic transition in Fortiche Arcane style, low-angle Dutch tilt macro shot of an aristocrat pale hand gripping coarse crimson velvet bedsheets and cold volcanic stone flagstones. Dying peat embers in a massive medieval fireplace cast dull amber key light against cold mountain wind whistling through unglazed stone arrow slits. Sulfur smoke motes and moldy granite textures. Prince Ash Bornhater awakens shivering, gasping for breath in the cavernous Lord Keep bedchamber of Crossroads."
+    },
+    {
+      "mae_bg": 0.0292,
+      "ssim_bg": 0.9985,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-07",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_07_keyframe.png",
+      "sha256": "b16a39f751eec8e1486dcc0c000d867ee62ff219a916c92af599f8de5ba9a025",
+      "cached": false,
+      "filename": "ttd_ep01_shot_07_keyframe.png",
+      "scene_title": "The Mirror of the 36th Prince",
+      "duration_seconds": 3.5,
+      "characters": [
+        "Prince Ash Bornhater (Mirror Reflection)"
+      ],
+      "positive_prompt": "Painterly Fortiche Arcane 2.5D animation style, eye-level medium shot of Prince Ash Bornhater 36th prince staring into a cracked silvered mirror mounted on iron wall brackets. Unhealthily pale aristocratic complexion, sharp hawkish jawline, disheveled jet-black hair falling across forehead. Intense amber-gold irises gleaming with cold predatory intelligence beneath deep bruised-purple insomnia rings. High-collared charcoal-black officer greatcoat with frayed gold embroidery, blackened iron gorget, uncut raw obsidian signet ring on right index finger. Cracked mirror glass creates dual fragmented reflection."
+    },
+    {
+      "mae_bg": 0.0115,
+      "ssim_bg": 0.9998,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-08",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_08_keyframe.png",
+      "sha256": "5c1fc0a24f98808f6c50d4c94f5ee3a84e8a95e5d782f269524ee5a2b458e1cb",
+      "cached": false,
+      "filename": "ttd_ep01_shot_08_keyframe.png",
+      "scene_title": "The Threshold Encounter (The Living Lucas)",
+      "duration_seconds": 3.0,
+      "characters": [
+        "Prince Ash Bornhater",
+        "Knight Lucas MacGregor (Unawakened Level 1)"
+      ],
+      "positive_prompt": "Tense cinematic dialogue framing in Fortiche Arcane aesthetic, reverse over-the-shoulder shot looking past Prince Ash charcoal officer greatcoat collar at Knight Lucas MacGregor standing guard in a cold granite corridor. Lucas is young prime age 22, dirty-blonde hair, clean unnotched broadsword at hip, rigid defensive posture with crossed arms, guarded icy steel-gray eyes with realistic torchlight reflections only, strictly zero glowing eyes and zero sparks on armor or sword. Weathered tan skin with left cheek claw scar. Torches in iron wall brackets cast flickering orange light against damp masonry."
+    },
+    {
+      "mae_bg": 0.0415,
+      "ssim_bg": 0.9972,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-09",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_09_keyframe.png",
+      "sha256": "db8bef2a3f526039454e32a158b159cf6959530fbac3e676e944da91c96abcca",
+      "cached": false,
+      "filename": "ttd_ep01_shot_09_keyframe.png",
+      "scene_title": "The Diagnostic Shock (The Living Roster)",
+      "duration_seconds": 2.5,
+      "characters": [
+        "Prince Ash Bornhater"
+      ],
+      "positive_prompt": "Macro extreme close-up on Prince Ash amber-gold iris in Fortiche Arcane painterly style. Subtle gold specular glint in the pupil reflecting semi-transparent blue tactical gamer UI brackets Level 1 SSR Knight Lucas Man of Steel Dormant. Dark eyelashes, bruised-purple insomnia rings beneath lower eyelid, cold sweat bead on pale temple. High tension, realization of living permadeath, sharp focal depth."
+    },
+    {
+      "mae_bg": 0.0099,
+      "ssim_bg": 0.9995,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-10",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_10_keyframe.png",
+      "sha256": "2f90f32452fda8a038399458a59ebffcb3e5ef276a2cfa2c91aec7ebcb9ca02d",
+      "cached": false,
+      "filename": "ttd_ep01_shot_10_keyframe.png",
+      "scene_title": "The Alarm of Stage 0 (The Southern Horns)",
+      "duration_seconds": 3.5,
+      "characters": [
+        "Crossroads Garrison (Silhouettes)",
+        "Black Crawlers (Horde)"
+      ],
+      "positive_prompt": "Epic dark fantasy establishing panorama in Fortiche Arcane brushwork and Ufotable atmospheric scale, extreme wide 18mm shot of Crossroads Forward Bastion on volcanic cliffs at stormy twilight. Cyclopean 30-meter basalt curtain walls, iron braziers roaring with black pitch smoke. In the 300-meter dead zone beyond the moat, the supernatural Black Fog churns like an apocalyptic thunderstorm wall. Swarms of multi-limbed chitinous arachnid horrors Black Crawlers erupt from the dry ditch scaling the lower stones as brass war horns echo."
+    },
+    {
+      "mae_bg": 0.0124,
+      "ssim_bg": 0.9995,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-11",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_11_keyframe.png",
+      "sha256": "6585e10ef7ce74256acdff0b888aa7f76e56d415b8c90138a61075a41c5f2e20",
+      "cached": false,
+      "filename": "ttd_ep01_shot_11_keyframe.png",
+      "scene_title": "Chaos on the Ramparts (Garrison Panic)",
+      "duration_seconds": 2.5,
+      "characters": [
+        "Knight Lucas MacGregor",
+        "Fleeing Conscript Levies"
+      ],
+      "positive_prompt": "Kinetic visceral tracking shot in Manhwa high-energy style blended with Fortiche Arcane impasto texturing, 28mm lens with 12-degree Dutch tilt. Knight Lucas with shaggy dirty-blonde hair, weathered tan skin, left cheek claw scar strides aggressively forward through a panic-stricken garrison, his heavy bastard sword drawn in gauntlets. Natural steel-gray human irises with realistic torchlight reflections only, zero glowing eyes and zero sparks on armor or blade. Terrified conscript levies drop iron spears and flee past him in motion blur. Rain and mud splash violently off steel greaves, torch flames whip in the storm, desperate resolve on Lucas scarred jaw."
+    },
+    {
+      "mae_bg": 0.0188,
+      "ssim_bg": 0.9991,
+      "spark_count": 0,
+      "bg_drift_passed": true,
+      "spark_gate_passed": true,
+      "shot_id": "SHOT-12",
+      "output_file": "E:\\ANTIGRAVITY\\flow_video_testbench\\output\\ttd_ep01_flow_keyframes\\ttd_ep01_shot_12_keyframe.png",
+      "sha256": "978127e7dfc04a713a9fecdd4494990ef6612693b10540609d525a98d0c60e87",
+      "cached": false,
+      "filename": "ttd_ep01_shot_12_keyframe.png",
+      "scene_title": "The Tyrant's Command (The First Defense Begins)",
+      "duration_seconds": 4.0,
+      "characters": [
+        "Prince Ash Bornhater",
+        "Knight Lucas MacGregor"
+      ],
+      "positive_prompt": "Heroic dark fantasy low-angle two-shot in premier Fortiche Arcane animation aesthetic with Ufotable lighting inertia. On the stone gatehouse parapet above, Prince Ash Bornhater stands tall in his charcoal officer greatcoat against the blood-purple storm sky, pointing downward with authority, obsidian signet ring catching torchlight, commanding the tactical bottleneck. Below him in the archway, Knight Lucas with shaggy dirty-blonde hair, weathered tan skin, left cheek claw scar slams his massive iron-reinforced oak pavise into the flagstones with ground-shaking impact, drawing his notched bastard sword to lock the choke point. Natural steel-gray eyes with realistic torchlight reflections only, zero glowing eyes, zero sparks on armor or sword. The first defense of Crossroads begins."
+    }
+  ]
+}

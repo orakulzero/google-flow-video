@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.supergraph/
+.tts_cache/
+output/*.mp4
+assets/ep01_shots/*.mp4

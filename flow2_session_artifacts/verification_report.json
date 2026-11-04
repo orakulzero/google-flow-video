@@ -1,0 +1,41 @@
+{
+  "all_passed": true,
+  "total_clips": 2,
+  "verified_clips": 2,
+  "details": [
+    {
+      "valid": true,
+      "file_size_bytes": 2441834,
+      "width": 1280,
+      "height": 720,
+      "fps": 24.0,
+      "frame_count": 190,
+      "duration": 7.92,
+      "faststart": true,
+      "video_codec_h264": true,
+      "audio_codec_aac": true,
+      "native_audio": true,
+      "pair_id": "pair_170629_shot_000"
+    },
+    {
+      "valid": true,
+      "file_size_bytes": 3945162,
+      "width": 1280,
+      "height": 720,
+      "fps": 24.0,
+      "frame_count": 190,
+      "duration": 7.92,
+      "faststart": true,
+      "video_codec_h264": true,
+      "audio_codec_aac": true,
+      "native_audio": true,
+      "pair_id": "pair_270000_shot_015"
+    }
+  ],
+  "contact_sheets": [
+    "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\contact_sheets\\comparison_pair_170629_shot_000.png",
+    "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\contact_sheets\\comparison_pair_270000_shot_015.png"
+  ],
+  "master_contact_sheet": "E:\\ANTIGRAVITY\\flow_video_testbench\\veo_arcane_style\\output\\master_verification_sheet.png",
+  "generated_at": "2026-11-03T05:34:22.602398+00:00"
+}

@@ -1,0 +1,261 @@
+{
+  "project": "Tyrant of the Tower Defense Game - Episode 1 Manga Flow Transitions",
+  "milestone": "Milestone 1: Cinematic Boss Fight Multi-Angle Video Assembly",
+  "option": "Pure Option 3: High-Energy Multi-Angle Combat",
+  "master_video": "ttd_episode_01_silent_720p.mp4",
+  "master_sha256": "7d7804b8a3a243d5d9ffaa6936926961c10d3a094205be19bed7b681979d477c",
+  "master_bytes": 27622124,
+  "resolution": "1280x720",
+  "fps": 24.0,
+  "frame_count": 1675,
+  "duration_seconds": 69.79166666666667,
+  "audio_streams": 0,
+  "silent": true,
+  "faststart": true,
+  "codec": "h264",
+  "pix_fmt": "yuv420p",
+  "crf": 18,
+  "preset": "fast",
+  "terminal_void_luma": 10.002495663734244,
+  "delivery_timestamp_utc": "2026-11-02T19:45:32.229816+00:00",
+  "contact_sheet": {
+    "filename": "ep01_manga_transitions_contact_sheet.png",
+    "dimensions": "1360x1825",
+    "sha256": "a450ee61abd08a2563788bc6028d4ea94cf7773c27b9e68db1cb5c60fa5d50d6",
+    "bytes": 2280670,
+    "card_count": 8,
+    "terminal_climax": "Segment 7 Frame 238 Lucas Solitary Back in Dark Void"
+  },
+  "combat_micro_shots": [
+    {
+      "shot_id": "SHOT-01",
+      "phase": "Battle: Wide Arena",
+      "camera": "High-Angle Extreme Wide Shot (24mm, -10 deg)",
+      "dur_sec": 2.5,
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D",
+      "subject": "Ruined Cathedral Throne Hall; colossal boss looming over ruined columns; Lucas centered"
+    },
+    {
+      "shot_id": "SHOT-02",
+      "phase": "Battle: Overhead Strategy",
+      "camera": "Top-Down Isometric Tactical View (28mm, 15 deg pan)",
+      "dur_sec": 2.0,
+      "style_domain": "DOMAIN 1/2: Arcane Tactical UI",
+      "subject": "Cyan defense hex tiles, aggressive red boss vector cones, Lucas maneuvering at choke point"
+    },
+    {
+      "shot_id": "SHOT-03",
+      "phase": "Battle: Close Combat Parries",
+      "camera": "Dutch-Tilt Low-Angle Combat Close-Up (50mm handheld orbital)",
+      "dur_sec": 2.2,
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D",
+      "subject": "Lucas in dark scarred plate, round buckler shield blocking boss tentacle/claw, sparks & sweat"
+    },
+    {
+      "shot_id": "SHOT-04",
+      "phase": "Battle: Decisive Strike Climax",
+      "camera": "Dramatic Low-Angle Upward Tracking (+4% Z-glide)",
+      "dur_sec": 2.8,
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D",
+      "subject": "Leaping upward diagonal golden broadsword arc bisecting the boss; blinding mana shockwave"
+    },
+    {
+      "shot_id": "SHOT-05",
+      "phase": "Victory: CRT CLEAR! Fanfare",
+      "camera": "Direct Frontal Macro on CRT Glass (+2% optical push-in)",
+      "dur_sec": 1.8,
+      "style_domain": "Retro Game CRT UI",
+      "subject": "Curved glass CRT monitor displaying glowing golden pixel runes CLEAR! CONGRATULATIONS!"
+    },
+    {
+      "shot_id": "SHOT-06",
+      "phase": "Streamer: Ecstatic Triumph",
+      "camera": "Frontal Medium Shot at Eye Level (locked tripod)",
+      "dur_sec": 2.2,
+      "style_domain": "Arcane 2.5D Chiaroscuro",
+      "subject": "STREAMER FACE-LOCKED: Ash leaps back in chair, arms thrown high in roar (Yaw <= 5 deg)"
+    },
+    {
+      "shot_id": "SHOT-07",
+      "phase": "Streamer: Shout into Mic",
+      "camera": "Low-Angle Dynamic Close-Up (+3% forward Z-glide)",
+      "dur_sec": 2.0,
+      "style_domain": "Arcane 2.5D Chiaroscuro",
+      "subject": "STREAMER FACE-LOCKED: Ash leans forward shouting into boom mic: 'I beat this game!'"
+    },
+    {
+      "shot_id": "SHOT-08",
+      "phase": "Streamer: Webcam Address",
+      "camera": "Frontal Medium Close-Up at Eye Level (locked tripod)",
+      "dur_sec": 2.0,
+      "style_domain": "Arcane 2.5D Chiaroscuro",
+      "subject": "STREAMER WEBCAM PINNED: Cocky smirk, right index finger pointing into webcam lens (Yaw 0 deg)"
+    },
+    {
+      "shot_id": "SHOT-09",
+      "phase": "Broadcast: Foxy 300K Alert",
+      "camera": "Medium 3/4 Shot of Desk Setup (locked framing)",
+      "dur_sec": 2.2,
+      "style_domain": "Arcane 2.5D / Stream HUD",
+      "subject": "Golden FOXY 300,000 KRW banner pops up; Ash clasps hands in grateful acknowledgment"
+    },
+    {
+      "shot_id": "SHOT-10",
+      "phase": "Broadcast: Reading Chat",
+      "camera": "Extreme Close-Up on Eye-Line (locked tripod)",
+      "dur_sec": 2.0,
+      "style_domain": "Arcane 2.5D Chiaroscuro",
+      "subject": "CHAT SEQUENCE: Smirk dissolves; dark pupils flick 10 deg upper-right reading priestess death"
+    },
+    {
+      "shot_id": "SHOT-11",
+      "phase": "Streamer: Somber Silence",
+      "camera": "Low-Angle Desk Shot (+2% slow push-in)",
+      "dur_sec": 2.2,
+      "style_domain": "Arcane 2.5D Chiaroscuro",
+      "subject": "STREAMER PITCH DOWN: Head bowed 10 deg, hands motionless on RGB keyboard; survivor's guilt"
+    },
+    {
+      "shot_id": "SHOT-12",
+      "phase": "Monitor: MVP Reward Card",
+      "camera": "Direct Frontal Monitor Push-In (+4% optical scale)",
+      "dur_sec": 2.5,
+      "style_domain": "DOMAIN 1: 2D Cel-Shaded Anime UI",
+      "subject": "Cel-shaded 2D anime bust portrait inside golden laurel wreath: STAGE MVP - Lucas [SSR]"
+    },
+    {
+      "shot_id": "SHOT-13",
+      "phase": "Reality: Rampart Carnage",
+      "camera": "High-Angle Sweeping Crane (20 deg tilt)",
+      "dur_sec": 2.8,
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D",
+      "subject": "Devastated stone ramparts strewn with fallen imperial soldiers, broken spears, black smoke"
+    },
+    {
+      "shot_id": "SHOT-14",
+      "phase": "Cathedral: Fallen Boss",
+      "camera": "Low-Angle Floor Tracking Shot along marble",
+      "dur_sec": 2.5,
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D",
+      "subject": "LUCAS REAR LOCK: Full rear view of Lucas standing motionless over lifeless boss on steps"
+    },
+    {
+      "shot_id": "SHOT-15",
+      "phase": "Transition: Environmental Decay",
+      "camera": "Medium Rear Shot on Shoulders (+2% slow push-in)",
+      "dur_sec": 2.5,
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D",
+      "subject": "LUCAS REAR LOCK: Cathedral columns, steps, and background walls dissolve into shadow"
+    },
+    {
+      "shot_id": "SHOT-16",
+      "phase": "Climax: Lucas in Dark Void",
+      "camera": "Static Low-Angle Wide Rear Shot (locked tripod)",
+      "dur_sec": 3.0,
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D in Void",
+      "subject": "LUCAS REAR IN VOID: Solitary back in scarred plate armor; bowed head; pure #000000 void"
+    }
+  ],
+  "segments": [
+    {
+      "segment_index": 1,
+      "filename": "segment_01.mp4",
+      "sha256": "a04a2531c535e48de10d8b136a5b786dc1989a539b606d203da6502827ef91d7",
+      "bytes": 9868325,
+      "title": "Scene 1: Wide Arena Boss Clash (Lucas vs Colossal Boss)",
+      "badge": "Segment 01 | 00:00.00 - 00:09.96 | Anchors: Wide Arena Battle",
+      "micro_shots": [
+        "SHOT-01",
+        "SHOT-02"
+      ],
+      "gaze_lock": "LUCAS COMBAT ACTION: Shield & sword combat, charging into arena, zero webcam streamer",
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D"
+    },
+    {
+      "segment_index": 2,
+      "filename": "segment_02.mp4",
+      "sha256": "a9be4965bace9e4dd434ecde3550fc6e2837bec977f5ec6545f9f085b2d2957e",
+      "bytes": 4032030,
+      "title": "Scene 2: Low-Angle Shield Block & Sparks (Round Shield Parry)",
+      "badge": "Segment 02 | 00:09.96 - 00:19.96 | Anchors: Shield Sparks Parry",
+      "micro_shots": [
+        "SHOT-03"
+      ],
+      "gaze_lock": "LUCAS SHIELD PARRY: Low-angle close-up, sparks across round shield, counter-slash",
+      "style_domain": "DOMAIN 2: Fortiche Arcane 3D"
+    },
+    {
+      "segment_index": 3,
+      "filename": "segment_03.mp4",
+      "sha256": "73441d8687b028e1ea11b65370c19fd1c280c60525aebe2d5745cb00a0309032",
+      "bytes": 3346023,
+      "title": "Scene 3: Decisive Final Strike to CLEAR! Fanfare",
+      "badge": "Segment 03 | 00:19.96 - 00:29.92 | Anchors: Broadsword Cleave -> Clear",
+      "micro_shots": [
+        "SHOT-04",
+        "SHOT-05"
+      ],
+      "gaze_lock": "CRT GAME CLEAR FANFARE: Sweeping sword strike into glowing dual monitor victory screen",
+      "style_domain": "Fortiche Arcane 2.5D -> Retro CRT UI"
+    },
+    {
+      "segment_index": 4,
+      "filename": "segment_04.mp4",
+      "sha256": "66238e667dc10c716b1dde0b6d6eab3b2aecb78e36de4965b0ed1c18b0eecf32",
+      "bytes": 3110106,
+      "title": "Scene 4: Rectangular Desk Dual Monitors & Stream Setup",
+      "badge": "Segment 04 | 00:29.92 - 00:39.92 | Anchors: RGB PC & Dual Monitors",
+      "micro_shots": [
+        "SHOT-09",
+        "SHOT-11"
+      ],
+      "gaze_lock": "DESK & STREAM CHAT SETUP: RGB mechanical keyboard, 3-ring PC tower, dual monitors, 0 face morphing",
+      "style_domain": "Fortiche Arcane 2.5D Chiaroscuro"
+    },
+    {
+      "segment_index": 5,
+      "filename": "segment_05.mp4",
+      "sha256": "5596159ec45c078d517ec7bd4d6ebc1aa3a9b45f3d36ab78918e42d342ea9ff6",
+      "bytes": 2144536,
+      "title": "Scene 5: Strategy Map to Streamer Broadcast Workstation",
+      "badge": "Segment 05 | 00:39.92 - 00:49.88 | Anchors: Frame 009 -> 014",
+      "micro_shots": [
+        "MS-04B",
+        "MS-04C",
+        "MS-05A"
+      ],
+      "gaze_lock": "STREAMER FACE-LOCKED (PITCH DOWN): Head bowed down 10 deg, eyes on keyboard and chat HUD",
+      "style_domain": "Fortiche Arcane 2.5D Chiaroscuro"
+    },
+    {
+      "segment_index": 6,
+      "filename": "segment_06.mp4",
+      "sha256": "b06bbfe091ee9deac8ce5efb4da450dbe13a4daa720b4f7bce11cd7fe0118ef0",
+      "bytes": 1752361,
+      "title": "Scene 6: Broadcast Workstation to Battlefield Ramparts",
+      "badge": "Segment 06 | 00:49.88 - 00:59.84 | Anchors: Frame 014 -> 023",
+      "micro_shots": [
+        "MS-05C",
+        "MS-06A",
+        "MS-06B"
+      ],
+      "gaze_lock": "LUCAS DUAL-STYLE TRANSITION: Domain 1 2D card -> Domain 2 Arcane cinematic 3D ramparts",
+      "style_domain": "DOMAIN 1 (2D Card) -> DOMAIN 2 (Arcane 3D)"
+    },
+    {
+      "segment_index": 7,
+      "filename": "segment_07.mp4",
+      "sha256": "873bc079cb14941b060c33b61fd4bf20f290db89760921cd9bedd453f4bf9dd9",
+      "bytes": 1178472,
+      "title": "Scene 7A: Rampart Ruins Dissolving into Darkness",
+      "badge": "Segment 07 | 00:59.84 - 01:05.00 | Anchors: Frame 023 -> Void",
+      "micro_shots": [
+        "MS-07A",
+        "MS-07B"
+      ],
+      "gaze_lock": "LUCAS REAR ORIENTATION LOCK: Head bowed, back squarely to camera, cathedral hall fading",
+      "style_domain": "DOMAIN 2: Arcane Cinematic 3D Dissolve"
+    }
+  ],
+  "mirrored_brain_directory": "C:\\Users\\Orakul Grey\\.gemini\\antigravity\\brain\\94dd6a04-54e7-4e8c-9551-224cace4f85f"
+}

@@ -1,0 +1,23 @@
+{
+  "master_mp4": "ttd_episode_01_cinematic_master_720p.mp4",
+  "duration_sec": 69.792,
+  "resolution": "1280x720",
+  "fps": 24.0,
+  "audio_sample_rate": 48000,
+  "audio_channels": 2,
+  "audio_codec": "aac",
+  "audio_layers": [
+    "Layer 1: Russian Studio Narration (voice_y0joebp3bwta, 7 beats)",
+    "Layer 2: Combat SFX (metallic parries, bell decay, blade slashes, mana burst)",
+    "Layer 3: Victory Fanfare (D/G/A major brass triads + crystalline glockenspiel)",
+    "Layer 4: Stream Ambiance (Cherry MX typing, mouse clicks, FOXY 300,000 KRW chime)",
+    "Layer 5: Environmental Ambience (dark cello, war drums, fortress storm, 42 Hz void drone)"
+  ],
+  "subtitles": [
+    "ttd_episode_01_narration.vtt",
+    "ttd_episode_01_narration.srt"
+  ],
+  "ducking": "sidechaincompress (-12 dB on BGM/SFX)",
+  "loudnorm": "EBU R128 (-16 LUFS, LRA 7, TP -1.0 dBTP)",
+  "limiter": "alimiter (-1.0 dBTP ceiling)"
+}
