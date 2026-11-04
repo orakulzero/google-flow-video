@@ -254,6 +254,22 @@ def ensure_canonical_anchor_images(root_dir: Path = ROOT_DIR) -> None:
 PROJECT_URL = "https://flow.google.com/project/7d9a2a67-9cd2-4a79-932e-717d2e29257f"
 
 
+def _log(msg: str) -> None:
+    """Print unbuffered to stdout (for UI task logs) and append to flow_batch.log."""
+    import time as _time
+    stamp = _time.strftime("%H:%M:%S")
+    line = f"[{stamp}] {msg}"
+    print(line, flush=True)
+    try:
+        log_file = ROOT_DIR / "output" / "ttd_ep01_omni_flash" / "flow_batch.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        with log_file.open("a", encoding="utf-8") as fh:
+            fh.write(line + "\n")
+            fh.flush()
+    except Exception:
+        pass
+
+
 def sanitize_flow_clip_cuts(clip_path: Path, target_dur: float = 8.0) -> None:
     """Detect any mid-clip camera cut or style break in a 10s Flow clip and trim/retime before the cut."""
     import shutil
@@ -282,7 +298,7 @@ def sanitize_flow_clip_cuts(clip_path: Path, target_dur: float = 8.0) -> None:
 
     cut_sec: Optional[float] = None
     step = max(1, int(fps * 0.25))
-    for idx in range(int(fps * 2.0), fc - 2, step):
+    for idx in range(int(fps * 2.5), fc - 2, step):
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
         ok_c, cand = cap.read()
         if not ok_c or cand is None:
@@ -291,27 +307,32 @@ def sanitize_flow_clip_cuts(clip_path: Path, target_dur: float = 8.0) -> None:
         cand_hist = cv2.calcHist([cand_hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
         cv2.normalize(cand_hist, cand_hist, 0, 1, cv2.NORM_MINMAX)
         corr = float(cv2.compareHist(ref_hist, cand_hist, cv2.HISTCMP_CORREL))
-        if corr < 0.48:
+        if corr < 0.25:
             t_s = idx / fps
-            if t_s >= 3.8:
-                cut_sec = max(3.6, t_s - 0.25)
+            if t_s >= 4.0:
+                cut_sec = max(3.8, t_s - 0.25)
                 break
     cap.release()
 
     if cut_sec is not None and cut_sec < target_dur:
         ff = shutil.which("ffmpeg") or str(Path.home() / ".local" / "bin" / "ffmpeg")
         stretch = round(target_dur / cut_sec, 4)
+        atempo_val = max(0.5, min(1.0, round(1.0 / stretch, 4)))
         tmp_out = clip_path.with_suffix(".sanitized.mp4")
         proc = subprocess.run(
             [
                 ff,
                 "-y",
-                "-i",
-                str(clip_path),
                 "-t",
                 f"{cut_sec:.2f}",
+                "-i",
+                str(clip_path),
                 "-vf",
                 f"setpts={stretch:.4f}*PTS,fps=24",
+                "-af",
+                f"atempo={atempo_val:.4f}",
+                "-t",
+                f"{target_dur:.2f}",
                 "-c:v",
                 "libx264",
                 "-preset",
@@ -330,7 +351,7 @@ def sanitize_flow_clip_cuts(clip_path: Path, target_dur: float = 8.0) -> None:
             capture_output=True,
             timeout=60,
         )
-        if proc.returncode == 0 and tmp_out.is_file() and tmp_out.stat().st_size > 100_000:
+        if proc.returncode == 0 and tmp_out.is_file() and tmp_out.stat().st_size > 1_000_000:
             tmp_out.replace(clip_path)
         elif tmp_out.is_file():
             tmp_out.unlink(missing_ok=True)
@@ -385,6 +406,7 @@ async def render_act_from_manifest(
         switch_to_videos_tab,
     )
 
+    _log(f"=== Starting Act {act_id} ({len(shots_to_process)} shots) in Google Flow Omni 1.1 Flash ===")
     async with client_cls(prof) as client:
         page = client._page
         assert page is not None
@@ -398,12 +420,11 @@ async def render_act_from_manifest(
 
         for idx, shot in enumerate(shots_to_process, 1):
             out_mp4 = clips_dir / f"{shot.shot_id}_omni.mp4"
-            if out_mp4.is_file() and out_mp4.stat().st_size > 200_000:
+            if out_mp4.is_file() and out_mp4.stat().st_size > 2_000_000:
                 cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
                 rendered_paths.append(out_mp4)
-                print(
-                    f"  [{idx}/{len(shots_to_process)}] Reusing verified {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)",
-                    flush=True,
+                _log(
+                    f"[{idx}/{len(shots_to_process)}] Reusing verified {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)"
                 )
                 continue
 
@@ -414,17 +435,16 @@ async def render_act_from_manifest(
                 if cand_sheet.is_file():
                     canonical_ref = cand_sheet
 
-            for attempt in range(1, 3):
+            for attempt in range(1, 6):
                 try:
                     if attempt > 1:
                         await page.goto(PROJECT_URL, wait_until="domcontentloaded", timeout=60000)
-                        await asyncio.sleep(5.0)
-                    print(
-                        f"  [{idx}/{len(shots_to_process)}] Submitting {shot.shot_id} (ref={canonical_ref.name}) [attempt {attempt}]...",
-                        flush=True,
+                        await asyncio.sleep(6.0)
+                    _log(
+                        f"[{idx}/{len(shots_to_process)}] Submitting {shot.shot_id} (ref={canonical_ref.name}) [attempt {attempt}/5]..."
                     )
                     await switch_to_videos_tab(page)
-                    await asyncio.sleep(1.2)
+                    await asyncio.sleep(1.5)
                     await clear_prompt_box_ingredients(page)
 
                     if canonical_ref.is_file():
@@ -448,13 +468,14 @@ async def render_act_from_manifest(
                     sanitize_flow_clip_cuts(out_mp4, target_dur=shot.duration_sec)
                     cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
                     rendered_paths.append(out_mp4)
-                    print(f"  [Flow Omni 1.1 Flash] Rendered {shot.shot_id} -> {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)", flush=True)
+                    _log(f"[Flow Omni 1.1 Flash] Rendered {shot.shot_id} -> {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)")
+                    await asyncio.sleep(2.5)
                     break
                 except Exception as exc:
-                    print(f"  [WARN] {shot.shot_id} attempt {attempt} failed: {exc}", flush=True)
-                    if attempt == 2:
+                    _log(f"[WARN] {shot.shot_id} attempt {attempt}/5 failed: {exc}")
+                    if attempt == 5:
                         raise
-                    await asyncio.sleep(4.0)
+                    await asyncio.sleep(10.0 * attempt)
 
     return rendered_paths
 

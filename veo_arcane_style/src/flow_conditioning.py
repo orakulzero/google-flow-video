@@ -160,6 +160,15 @@ async def await_flow_video(
     t0 = time.monotonic()
     deadline = t0 + timeout_s
     started = False
+    ru_err = "\u0427\u0442\u043e-\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a"
+    baseline_err_count = 0
+    try:
+        panel_init = page.locator("flow-agent-panel")
+        if await panel_init.count() > 0:
+            init_txt = await panel_init.last.inner_text()
+            baseline_err_count = init_txt.count("Something went wrong") + init_txt.count(ru_err)
+    except Exception:
+        baseline_err_count = 0
 
     while time.monotonic() < deadline:
         gates = page.locator(LIVE_GATE_LOCATOR)
@@ -223,14 +232,14 @@ async def await_flow_video(
             await asyncio.sleep(5.0)
             await switch_to_videos_tab(page)
 
-        if (time.monotonic() - t0) > 15.0:
+        if (time.monotonic() - t0) > 18.0 and pending == 0:
             panel = page.locator("flow-agent-panel")
             if await panel.count() > 0:
                 text = await panel.last.inner_text()
-                ru_err = "\u0427\u0442\u043e-\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a"
-                if "Something went wrong" in text or ru_err in text:
+                cur_err_count = text.count("Something went wrong") + text.count(ru_err)
+                if cur_err_count > baseline_err_count:
                     raise RuntimeError("Google Flow returned error in agent panel.")
-            if int(time.monotonic() - t0) % 16 < 2 and pending == 0:
+            if int(time.monotonic() - t0) % 16 < 2:
                 await switch_to_videos_tab(page)
 
         await asyncio.sleep(2.0)
