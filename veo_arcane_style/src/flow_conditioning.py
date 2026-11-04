@@ -100,24 +100,41 @@ async def attach_frame_ingredient(page, file_path: Path) -> None:
         await upload_btn.click(timeout=8000)
     chooser = await fc_info.value
 
-    unique_filename = f"{file_path.stem}_{uuid.uuid4().hex[:6]}{file_path.suffix}"
+    unique_stem = f"{file_path.stem}_{uuid.uuid4().hex[:6]}"
+    unique_filename = f"{unique_stem}{file_path.suffix}"
     await chooser.set_files({
         "name": unique_filename,
         "mimeType": "image/png",
         "buffer": file_path.read_bytes(),
     })
-    await asyncio.sleep(4.5)
+    await asyncio.sleep(5.5)
 
     picker = page.locator("flow-add-menu-popover-content").first
     if not await picker.is_visible():
         await add_btn.click(timeout=8000)
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(1.8)
 
-    opt = picker.locator("button.asset-item[role='option']").first
+    target_idx = await page.evaluate(
+        """(stem) => {
+            const items = Array.from(document.querySelectorAll("flow-add-menu-popover-content button.asset-item[role='option']"));
+            for (let i = 0; i < items.length; i++) {
+                const txt = (items[i].innerText || "").trim();
+                if (txt.includes(stem)) return i;
+            }
+            for (let i = 0; i < items.length; i++) {
+                const txt = (items[i].innerText || "").trim();
+                if (txt.includes(".jpg") || txt.includes(".png") || txt.includes("Image") || txt.includes("\u0418\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u0435")) {
+                    return i;
+                }
+            }
+            return 0;
+        }""",
+        unique_stem,
+    )
+    opt = picker.locator("button.asset-item[role='option']").nth(int(target_idx or 0))
     await opt.wait_for(state="visible", timeout=15000)
     await opt.click(timeout=5000)
-    await asyncio.sleep(1.2)
-
+    await asyncio.sleep(1.5)
     if await picker.is_visible():
         detail_add = page.locator("button.detail-add-to-prompt-btn:not([disabled])").first
         if await detail_add.count() > 0 and await detail_add.is_visible():
@@ -234,7 +251,7 @@ async def save_native_video(
         resp = await page.request.get(vid_src, timeout=180000, max_redirects=5)
         if resp.status < 300:
             body = await resp.body()
-            if len(body) > 1000 and body[4:8] == b"ftyp":
+            if len(body) > 10000 and body[4:8] == b"ftyp" and b"moov" in body:
                 video_bytes = body
     except Exception:
         pass
@@ -256,8 +273,8 @@ async def save_native_video(
         import base64
         video_bytes = base64.b64decode(body_b64)
 
-    if len(video_bytes) < 1000:
-        raise ValueError(f"Downloaded video too small ({len(video_bytes)} bytes)")
+    if len(video_bytes) < 10000 or b"moov" not in video_bytes:
+        raise ValueError(f"Downloaded video incomplete or missing moov atom ({len(video_bytes)} bytes)")
     out_path.write_bytes(video_bytes)
 
     # Ensure FastStart layout (moov before mdat)

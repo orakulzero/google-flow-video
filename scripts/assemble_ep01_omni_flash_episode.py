@@ -307,32 +307,81 @@ def ensure_3act_bgm_wavs(out_dir: Path) -> dict[int, Path]:
     return out_map
 
 
-def _synth_deterministic_persona_wav(out_wav: Path, voice_id: str, duration_sec: float) -> Path:
-    """Synthesize a deterministic 48kHz stereo voice-cadence WAV keyed to CHARACTER_VOICE_REGISTRY voice_id."""
+def _synth_google_translate_persona_wav(
+    out_wav: Path,
+    clean_text: str,
+    voice_id: str,
+    duration_sec: float,
+) -> Path:
+    """Synthesize spoken Russian dialogue via Google TTS and sculpt pitch/timbre per CHARACTER_VOICE_REGISTRY."""
+    import re
+    import urllib.parse
+    import urllib.request
+
     out_wav.parent.mkdir(parents=True, exist_ok=True)
-    sr = 48000
-    dur = max(1.2, min(7.0, float(duration_sec)))
-    t = np.linspace(0, dur, int(sr * dur), endpoint=False, dtype=np.float32)
-    pitch_map = {
-        "Alnilam": 130.81,
-        "Orus": 110.00,
-        "Aoede": 220.00,
-        "Fenrir": 164.81,
-        "Charon": 98.00,
-        "Puck": 196.00,
-        "Kore": 246.94,
+    raw_chunks = [c.strip() for c in re.split(r"(?<=[.!?…])\s+", clean_text.strip()) if c.strip()]
+    if not raw_chunks:
+        raw_chunks = [clean_text.strip() or "Продолжаем."]
+    chunks: list[str] = []
+    for ch in raw_chunks:
+        while len(ch) > 180:
+            split_idx = ch.rfind(" ", 0, 180)
+            if split_idx <= 0:
+                split_idx = 180
+            chunks.append(ch[:split_idx].strip())
+            ch = ch[split_idx:].strip()
+        if ch:
+            chunks.append(ch)
+
+    mp3_bytes = bytearray()
+    for ch in chunks:
+        q = urllib.parse.quote(ch)
+        url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={q}&tl=ru&client=tw-ob"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            mp3_bytes.extend(resp.read())
+
+    tmp_mp3 = out_wav.with_suffix(".raw_tts.mp3")
+    tmp_mp3.write_bytes(bytes(mp3_bytes))
+
+    # Pitch factor & tempo compensation per CHARACTER_VOICE_REGISTRY voice_id
+    voice_sculpt = {
+        "Alnilam": (0.8909, 1.22, "equalizer=f=180:t=q:w=1.2:g=3"),
+        "Orus": (0.8168, 1.28, "equalizer=f=140:t=q:w=1.0:g=4"),
+        "Aoede": (1.0293, 1.08, "equalizer=f=280:t=q:w=1.2:g=2"),
+        "Fenrir": (0.9330, 1.18, "equalizer=f=210:t=q:w=1.2:g=2"),
+        "Charon": (0.7711, 1.32, "equalizer=f=125:t=q:w=1.0:g=5"),
+        "Puck": (0.9013, 1.22, "equalizer=f=220:t=q:w=1.2:g=2"),
+        "Kore": (1.0718, 1.06, "equalizer=f=320:t=q:w=1.2:g=2"),
     }
-    f0 = pitch_map.get(voice_id, 146.83)
-    syllable_env = 0.55 + 0.45 * np.sin(2 * np.pi * 4.2 * t)
-    fade = np.minimum(1.0, np.minimum(t / 0.08, (dur - t) / 0.12))
-    sig = (0.55 * np.sin(2 * np.pi * f0 * t) + 0.25 * np.sin(2 * np.pi * (f0 * 2.0) * t)) * syllable_env * fade
-    stereo = np.stack([sig, sig], axis=-1)
-    pcm16 = (np.clip(stereo, -0.95, 0.95) * 18000.0).astype(np.int16)
-    with wave.open(str(out_wav), "wb") as wf:
-        wf.setnchannels(2)
-        wf.setsampwidth(2)
-        wf.setframerate(sr)
-        wf.writeframes(pcm16.tobytes())
+    p_fac, t_comp, eq_flt = voice_sculpt.get(voice_id, (0.90, 1.18, "equalizer=f=180:t=q:w=1.2:g=2"))
+    af_chain = (
+        f"Silenceremove=start_periods=1:start_silence=0.05:start_threshold=-45dB,"
+        f"asetrate=24000*{p_fac:.4f},aresample=48000,atempo={t_comp:.4f},{eq_flt},volume=1.6"
+    ).replace("Silenceremove", "silenceremove")
+
+    subprocess.run(
+        [
+            FFMPEG_EXE,
+            "-y",
+            "-i",
+            str(tmp_mp3),
+            "-af",
+            af_chain,
+            "-ar",
+            "48000",
+            "-ac",
+            "2",
+            str(out_wav),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=30,
+    )
+    try:
+        tmp_mp3.unlink()
+    except OSError:
+        pass
     return out_wav
 
 
@@ -347,7 +396,7 @@ async def synth_dialogue_turn_voice(
 ) -> dict[str, Any]:
     """
     Synthesize Russian dialogue audio for a single `DialogueTurn` enforcing
-    strict `CHARACTER_VOICE_REGISTRY` voice invariance (zero fallback to edge_tts when strict_voice_invariance=True)
+    strict `CHARACTER_VOICE_REGISTRY` voice invariance
     and resolving `<bookmark mark="..."/>` timestamps at `fps=24`.
     """
     global _GEMINI_TTS_REACHABLE
@@ -365,12 +414,12 @@ async def synth_dialogue_turn_voice(
     audio_dir.mkdir(parents=True, exist_ok=True)
     TTS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     out_wav = audio_dir / f"{shot_id}_turn{turn.turn_index}_{turn.speaker_id}_{expected_voice}.wav"
-    cache_key = hashlib.sha256(f"turn_v2|{expected_voice}|{turn.style_prompt}|{clean_text}".encode("utf-8")).hexdigest()[:24]
+    cache_key = hashlib.sha256(f"turn_v3_ru_tts|{expected_voice}|{turn.style_prompt}|{clean_text}".encode("utf-8")).hexdigest()[:24]
     cached_wav = TTS_CACHE_DIR / f"{cache_key}.wav"
 
     used_provider = f"Gemini Studio ({expected_voice} • {turn.speaker_id})"
     if cached_wav.is_file() and cached_wav.stat().st_size > 4000:
-        shutil.copy2(cached_wav, out_wav)
+        shutil.copyfile(cached_wav, out_wav)
     else:
         api_key = _resolve_gemini_api_key()
         proxy_url = _detect_local_proxy()
@@ -415,12 +464,9 @@ async def synth_dialogue_turn_voice(
                         break
 
         if not synthesized:
-            if strict_voice_invariance:
-                # Deterministic persona WAV without switching to a different neural voice family
-                _synth_deterministic_persona_wav(out_wav, expected_voice, window_dur)
-                shutil.copy2(out_wav, cached_wav)
-            else:
-                raise RuntimeError(f"TTS synthesis failed for {shot_id} ({turn.speaker_id} / {expected_voice})")
+            _synth_google_translate_persona_wav(out_wav, clean_text, expected_voice, window_dur)
+            shutil.copyfile(out_wav, cached_wav)
+            used_provider = f"Google Neural RU ({expected_voice} • {turn.speaker_id})"
 
     raw_dur = _probe_or_estimate_duration(FFMPEG_EXE, out_wav, fallback=window_dur)
     atempo = max(0.92, min(1.08, round(raw_dur / max(window_dur, 0.5), 4)))
@@ -504,7 +550,7 @@ def mix_shot_dialogue_and_hud(
     mix_labels: list[str] = []
 
     if has_clip_audio:
-        a_parts.append("[0:a]volume=0.22,aresample=48000,apad[a_sfx]")
+        a_parts.append("[0:a]lowpass=f=240,volume=0.06,aresample=48000,apad[a_sfx]")
         mix_labels.append("[a_sfx]")
     else:
         inputs.extend(["-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000"])
@@ -515,7 +561,7 @@ def mix_shot_dialogue_and_hud(
 
     if hud_chime_idx is not None:
         a_parts.append(
-            f"[{hud_chime_idx}:a]aresample=48000,volume=0.85,adelay={hud_appear_ms}|{hud_appear_ms},apad[a_hud]"
+            f"[{hud_chime_idx}:a]aresample=48000,volume=0.65,adelay={hud_appear_ms}|{hud_appear_ms},apad[a_hud]"
         )
         mix_labels.append("[a_hud]")
 
@@ -527,11 +573,14 @@ def mix_shot_dialogue_and_hud(
         atempo = float(t_info.get("atempo", 1.0))
         lbl = f"[a_voc{idx_t}]"
         a_parts.append(
-            f"[{wav_idx}:a]aresample=48000,atempo={atempo:.4f},volume=1.20,adelay={delay_ms}|{delay_ms},apad{lbl}"
+            f"[{wav_idx}:a]aresample=48000,atempo={atempo:.4f},volume=1.95,adelay={delay_ms}|{delay_ms},apad{lbl}"
         )
         mix_labels.append(lbl)
 
-    amix_str = f"{''.join(mix_labels)}amix=inputs={len(mix_labels)}:duration=first:dropout_transition=2[a]"
+    amix_str = (
+        f"{''.join(mix_labels)}amix=inputs={len(mix_labels)}:duration=first:"
+        f"dropout_transition=0:normalize=0,alimiter=limit=0.95[a]"
+    )
 
     if fast_copy_without_hud and shot.status_window_overlay is None:
         fc_audio = ";".join([*a_parts, amix_str])
@@ -622,9 +671,9 @@ def assemble_act_master(
     concat_txt.write_text("\n".join(f"file '{p.resolve().as_posix()}'" for p in shot_mp4s) + "\n", encoding="utf-8")
 
     fc = (
-        "[0:a]volume=1.0[a_main];"
-        "[1:a]aresample=48000,volume=0.16[a_bgm];"
-        "[a_main][a_bgm]amix=inputs=2:duration=first:dropout_transition=2[a]"
+        "[0:a]volume=1.15[a_main];"
+        "[1:a]aresample=48000,volume=0.08[a_bgm];"
+        "[a_main][a_bgm]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.95[a]"
     )
     cmd = [
         FFMPEG_EXE,

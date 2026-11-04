@@ -950,6 +950,52 @@ class SceneRenderCache:
         if not clip_p.is_file():
             raise FileNotFoundError(f"Cannot extract last frame; clip not found: {clip_p}")
 
+        try:
+            import cv2
+            import numpy as np
+
+            cap = cv2.VideoCapture(str(clip_p))
+            fps = float(cap.get(cv2.CAP_PROP_FPS) or 24.0)
+            fc = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+            if fc > 6:
+                ref_idx = min(int(fps * 0.8), max(0, fc // 4))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, ref_idx)
+                ok_ref, ref_frame = cap.read()
+                max_end_idx = min(fc - 2, int(fps * 7.85))
+                if max_end_idx < 1:
+                    max_end_idx = fc - 1
+                chosen_frame = None
+                if ok_ref and ref_frame is not None:
+                    ref_hsv = cv2.cvtColor(ref_frame, cv2.COLOR_BGR2HSV)
+                    ref_hist = cv2.calcHist([ref_hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
+                    cv2.normalize(ref_hist, ref_hist, 0, 1, cv2.NORM_MINMAX)
+                    min_idx = max(ref_idx + 1, int(fps * 3.0)) if max_end_idx > int(fps * 3.5) else ref_idx
+                    step = max(1, int(fps * 0.25))
+                    for cand_idx in range(max_end_idx, min_idx - 1, -step):
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, cand_idx)
+                        ok_c, cand_frame = cap.read()
+                        if not ok_c or cand_frame is None:
+                            continue
+                        cand_hsv = cv2.cvtColor(cand_frame, cv2.COLOR_BGR2HSV)
+                        cand_hist = cv2.calcHist([cand_hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
+                        cv2.normalize(cand_hist, cand_hist, 0, 1, cv2.NORM_MINMAX)
+                        corr = float(cv2.compareHist(ref_hist, cand_hist, cv2.HISTCMP_CORREL))
+                        if corr >= 0.52:
+                            chosen_frame = cand_frame
+                            break
+                if chosen_frame is None:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, max_end_idx)
+                    ok_f, chosen_frame = cap.read()
+                cap.release()
+                if chosen_frame is not None and chosen_frame.size > 0:
+                    cv2.imwrite(str(out_jpg), chosen_frame)
+                    if out_jpg.is_file() and out_jpg.stat().st_size > 100:
+                        return out_jpg
+            else:
+                cap.release()
+        except Exception:
+            pass
+
         exe = shutil.which(ffmpeg_bin) or str(Path.home() / ".local" / "bin" / "ffmpeg")
         if not Path(exe).is_file():
             exe = ffmpeg_bin
@@ -968,15 +1014,6 @@ class SceneRenderCache:
         ]
         res = subprocess.run(cmd, check=False, capture_output=True, timeout=30)
         if res.returncode != 0 or not out_jpg.is_file() or out_jpg.stat().st_size < 100:
-            import cv2
-            cap = cv2.VideoCapture(str(clip_p))
-            fc = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
-            if fc > 1:
-                cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, fc - 2))
-            ok, frame = cap.read()
-            cap.release()
-            if not ok or frame is None:
-                res.check_returncode()
-            cv2.imwrite(str(out_jpg), frame)
+            res.check_returncode()
         return out_jpg
 

@@ -254,6 +254,88 @@ def ensure_canonical_anchor_images(root_dir: Path = ROOT_DIR) -> None:
 PROJECT_URL = "https://flow.google.com/project/7d9a2a67-9cd2-4a79-932e-717d2e29257f"
 
 
+def sanitize_flow_clip_cuts(clip_path: Path, target_dur: float = 8.0) -> None:
+    """Detect any mid-clip camera cut or style break in a 10s Flow clip and trim/retime before the cut."""
+    import shutil
+    import subprocess
+    import cv2
+
+    if not clip_path.is_file():
+        return
+    cap = cv2.VideoCapture(str(clip_path))
+    fps = float(cap.get(cv2.CAP_PROP_FPS) or 24.0)
+    fc = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+    if fc < int(fps * 4.5):
+        cap.release()
+        return
+
+    ref_idx = int(fps * 0.75)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, ref_idx)
+    ok_ref, ref_frame = cap.read()
+    if not ok_ref or ref_frame is None:
+        cap.release()
+        return
+
+    ref_hsv = cv2.cvtColor(ref_frame, cv2.COLOR_BGR2HSV)
+    ref_hist = cv2.calcHist([ref_hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
+    cv2.normalize(ref_hist, ref_hist, 0, 1, cv2.NORM_MINMAX)
+
+    cut_sec: Optional[float] = None
+    step = max(1, int(fps * 0.25))
+    for idx in range(int(fps * 2.0), fc - 2, step):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        ok_c, cand = cap.read()
+        if not ok_c or cand is None:
+            continue
+        cand_hsv = cv2.cvtColor(cand, cv2.COLOR_BGR2HSV)
+        cand_hist = cv2.calcHist([cand_hsv], [0, 1], None, [32, 32], [0, 180, 0, 256])
+        cv2.normalize(cand_hist, cand_hist, 0, 1, cv2.NORM_MINMAX)
+        corr = float(cv2.compareHist(ref_hist, cand_hist, cv2.HISTCMP_CORREL))
+        if corr < 0.48:
+            t_s = idx / fps
+            if t_s >= 3.8:
+                cut_sec = max(3.6, t_s - 0.25)
+                break
+    cap.release()
+
+    if cut_sec is not None and cut_sec < target_dur:
+        ff = shutil.which("ffmpeg") or str(Path.home() / ".local" / "bin" / "ffmpeg")
+        stretch = round(target_dur / cut_sec, 4)
+        tmp_out = clip_path.with_suffix(".sanitized.mp4")
+        proc = subprocess.run(
+            [
+                ff,
+                "-y",
+                "-i",
+                str(clip_path),
+                "-t",
+                f"{cut_sec:.2f}",
+                "-vf",
+                f"setpts={stretch:.4f}*PTS,fps=24",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "fast",
+                "-crf",
+                "18",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-movflags",
+                "+faststart",
+                str(tmp_out),
+            ],
+            check=False,
+            capture_output=True,
+            timeout=60,
+        )
+        if proc.returncode == 0 and tmp_out.is_file() and tmp_out.stat().st_size > 100_000:
+            tmp_out.replace(clip_path)
+        elif tmp_out.is_file():
+            tmp_out.unlink(missing_ok=True)
+
+
 async def render_act_from_manifest(
     act_id: int,
     manifest_path: Path = ROOT_DIR / "config" / "ep01_3act_manifest.json",
@@ -326,25 +408,27 @@ async def render_act_from_manifest(
                 continue
 
             start_img = resolve_shot_start_frame(shot, cache, clips_dir=clips_dir)
+            canonical_ref = start_img
+            if shot.character_sheet_refs:
+                cand_sheet = ROOT_DIR / SHEETS_DIR / shot.character_sheet_refs[0]
+                if cand_sheet.is_file():
+                    canonical_ref = cand_sheet
+
             for attempt in range(1, 3):
                 try:
                     if attempt > 1:
                         await page.goto(PROJECT_URL, wait_until="domcontentloaded", timeout=60000)
                         await asyncio.sleep(5.0)
                     print(
-                        f"  [{idx}/{len(shots_to_process)}] Submitting {shot.shot_id} ({shot.chain_mode}, start={start_img.name}) [attempt {attempt}]...",
+                        f"  [{idx}/{len(shots_to_process)}] Submitting {shot.shot_id} (ref={canonical_ref.name}) [attempt {attempt}]...",
                         flush=True,
                     )
                     await switch_to_videos_tab(page)
                     await asyncio.sleep(1.2)
                     await clear_prompt_box_ingredients(page)
 
-                    for sheet_name in shot.character_sheet_refs[:2]:
-                        sheet_p = ROOT_DIR / SHEETS_DIR / sheet_name
-                        if sheet_p.is_file():
-                            await attach_frame_ingredient(page, sheet_p.resolve())
-                    if start_img.is_file():
-                        await attach_frame_ingredient(page, start_img.resolve())
+                    if canonical_ref.is_file():
+                        await attach_frame_ingredient(page, canonical_ref.resolve())
 
                     state_before = await page.evaluate(VIDEO_STATE_JS)
                     baseline_keys: set[str] = set()
@@ -361,6 +445,7 @@ async def render_act_from_manifest(
 
                     vid_uuid, vid_src = await await_flow_video(page, baseline_keys, timeout_s=360.0)
                     await save_native_video(page, vid_src, vid_uuid, out_mp4)
+                    sanitize_flow_clip_cuts(out_mp4, target_dur=shot.duration_sec)
                     cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
                     rendered_paths.append(out_mp4)
                     print(f"  [Flow Omni 1.1 Flash] Rendered {shot.shot_id} -> {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)", flush=True)
