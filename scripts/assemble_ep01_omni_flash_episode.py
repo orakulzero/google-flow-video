@@ -886,7 +886,7 @@ async def assemble_3act_episode_from_manifest(
 
     if BRAIN_DIR.is_dir() and BRAIN_DIR.resolve() != out_dir.resolve():
         for artifact_p in (master_3act_mp4, audit_sheet_3act, srt_3act, vtt_3act, report_md):
-            shutil.copy2(artifact_p, BRAIN_DIR / artifact_p.name)
+            shutil.copyfile(artifact_p, BRAIN_DIR / artifact_p.name)
 
     print(
         f"[3-Act] ASSEMBLED 16-MIN MASTER: {master_3act_mp4} "

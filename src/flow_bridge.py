@@ -2059,8 +2059,9 @@ class FlowEducationalCompositor:
         draw.rectangle([0, 0, W, 58], fill=(14, 21, 38))
         draw.line([0, 58, W, 58], fill=(38, 68, 115), width=2)
         if is_ru:
+            ru_default_phase = "\u0423\u0427\u0415\u0411\u041d\u042b\u0419 \u041c\u041e\u0414\u0423\u041b\u042c"
             phase_badge = _truncate_words(
-                f"\u0421\u0426\u0415\u041d\u0410 {scene.scene_number:02d}/{max(1, total_scenes):02d}  |  {(scene.pedagogical_phase or '\u0423\u0427\u0415\u0411\u041d\u042b\u0419 \u041c\u041e\u0414\u0423\u041b\u042c').upper()}",
+                f"\u0421\u0426\u0415\u041d\u0410 {scene.scene_number:02d}/{max(1, total_scenes):02d}  |  {(scene.pedagogical_phase or ru_default_phase).upper()}",
                 42,
             )
         else:
