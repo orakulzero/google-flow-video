@@ -957,7 +957,7 @@ class SceneRenderCache:
             exe,
             "-y",
             "-sseof",
-            "-0.05",
+            "-0.25",
             "-i",
             str(clip_p),
             "-frames:v",
@@ -966,6 +966,17 @@ class SceneRenderCache:
             "2",
             str(out_jpg),
         ]
-        subprocess.run(cmd, check=True, capture_output=True, timeout=30)
+        res = subprocess.run(cmd, check=False, capture_output=True, timeout=30)
+        if res.returncode != 0 or not out_jpg.is_file() or out_jpg.stat().st_size < 100:
+            import cv2
+            cap = cv2.VideoCapture(str(clip_p))
+            fc = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+            if fc > 1:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, max(0, fc - 2))
+            ok, frame = cap.read()
+            cap.release()
+            if not ok or frame is None:
+                res.check_returncode()
+            cv2.imwrite(str(out_jpg), frame)
         return out_jpg
 

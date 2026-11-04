@@ -67,6 +67,12 @@ class _CDPFileChooser:
         self._page = cdp_page
         self.backend_node_id = backend_node_id
 
+    def __await__(self):
+        async def _self() -> "_CDPFileChooser":
+            return self
+
+        return _self().__await__()
+
     async def set_files(self, file_spec: Any) -> None:
         if isinstance(file_spec, dict):
             tmp_dir = Path(tempfile.mkdtemp(prefix="flow_upload_"))
@@ -175,14 +181,24 @@ class CDPLocator:
         sel_json = json.dumps(self._selector)
         return f"""(() => {{
             const raw = {sel_json};
-            let nodes = [];
-            try {{
-                nodes = Array.from(document.querySelectorAll(raw));
-            }} catch (e) {{
-                const clean = raw.replace(/:has\\([^)]*\\)/g, '').replace(/:text-is\\([^)]*\\)/g, '').trim() || '*';
-                nodes = Array.from(document.querySelectorAll(clean));
+            const textMatch = raw.match(/:text-is\\(['"]([^'"]+)['"]\\)/);
+            if (!textMatch) {{
+                try {{
+                    return Array.from(document.querySelectorAll(raw));
+                }} catch (e) {{
+                    return [];
+                }}
             }}
-            return nodes;
+            const wantedText = textMatch[1];
+            const clean = raw
+                .replace(/:has\\([^)]*:text-is\\([^)]*\\)\\)/g, '')
+                .replace(/:text-is\\([^)]*\\)/g, '')
+                .trim() || '*';
+            return Array.from(document.querySelectorAll(clean)).filter(el => {{
+                const icons = Array.from(el.querySelectorAll('mat-icon'));
+                if (icons.some(ic => (ic.textContent || '').trim() === wantedText)) return true;
+                return (el.textContent || '').trim() === wantedText;
+            }});
         }})()"""
 
     async def count(self) -> int:
@@ -214,6 +230,38 @@ class CDPLocator:
 
     async def click(self, timeout: float = 8000.0, position: Optional[dict[str, int]] = None, force: bool = False) -> None:
         idx_js = "0" if self._index_mode == "first" else ("nodes.length - 1" if self._index_mode == "last" else str(self._nth_idx))
+        is_submit = "generate-icon-button" in self._selector or "submit" in self._selector.lower()
+        if is_submit:
+            pm_rect = await self._page.evaluate(
+                """() => {
+                    document.querySelectorAll('.cdk-overlay-backdrop').forEach(b => b.click());
+                    const pm = document.querySelector('div.ProseMirror');
+                    if (!pm) return null;
+                    pm.focus();
+                    const r = pm.getBoundingClientRect();
+                    return {x: r.x + r.width / 2, y: r.y + r.height / 2};
+                }"""
+            )
+            if pm_rect:
+                await self._page.send(
+                    "Input.dispatchMouseEvent",
+                    {"type": "mousePressed", "x": pm_rect["x"], "y": pm_rect["y"], "button": "left", "clickCount": 1},
+                )
+                await self._page.send(
+                    "Input.dispatchMouseEvent",
+                    {"type": "mouseReleased", "x": pm_rect["x"], "y": pm_rect["y"], "button": "left", "clickCount": 1},
+                )
+                await asyncio.sleep(0.2)
+            await self._page.send(
+                "Input.dispatchKeyEvent",
+                {"type": "rawKeyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13},
+            )
+            await self._page.send(
+                "Input.dispatchKeyEvent",
+                {"type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13},
+            )
+            return
+
         await self._page.evaluate(
             f"""() => {{
                 const nodes = {self._js_resolve_Expr()};
@@ -226,13 +274,24 @@ class CDPLocator:
 
     async def hover(self, timeout: float = 5000.0) -> None:
         idx_js = "0" if self._index_mode == "first" else ("nodes.length - 1" if self._index_mode == "last" else str(self._nth_idx))
-        await self._page.evaluate(
+        rect = await self._page.evaluate(
             f"""() => {{
                 const nodes = {self._js_resolve_Expr()};
                 const el = nodes[{idx_js}];
-                if (el) el.dispatchEvent(new MouseEvent('mouseenter', {{bubbles: true}}));
+                if (!el) return null;
+                el.scrollIntoView({{block: 'center'}});
+                const r = el.getBoundingClientRect();
+                el.dispatchEvent(new PointerEvent('pointerenter', {{bubbles: true}}));
+                el.dispatchEvent(new MouseEvent('mouseenter', {{bubbles: true}}));
+                el.dispatchEvent(new MouseEvent('mouseover', {{bubbles: true}}));
+                return {{x: r.x + r.width / 2, y: r.y + r.height / 2}};
             }}"""
         )
+        if rect:
+            await self._page.send(
+                "Input.dispatchMouseEvent",
+                {"type": "mouseMoved", "x": rect["x"], "y": rect["y"]},
+            )
 
     async def inner_text(self) -> str:
         idx_js = "0" if self._index_mode == "first" else ("nodes.length - 1" if self._index_mode == "last" else str(self._nth_idx))
@@ -248,21 +307,17 @@ class CDPLocator:
     async def press_sequentially(self, text: str, delay: float = 4.0) -> None:
         idx_js = "0" if self._index_mode == "first" else ("nodes.length - 1" if self._index_mode == "last" else str(self._nth_idx))
         await self._page.evaluate(
-            f"""(txt) => {{
+            f"""() => {{
+                document.querySelectorAll('.cdk-overlay-backdrop').forEach(b => b.click());
                 const nodes = {self._js_resolve_Expr()};
                 const el = nodes[{idx_js}];
                 if (!el) throw new Error('Editor element not found');
                 el.focus();
-                if ('value' in el) {{
-                    el.value = txt;
-                    el.dispatchEvent(new Event('input', {{bubbles: true}}));
-                }} else {{
-                    el.textContent = txt;
-                    el.dispatchEvent(new InputEvent('input', {{bubbles: true, data: txt, inputType: 'insertText'}}));
-                }}
-            }}""",
-            text,
+                document.execCommand('selectAll', false, null);
+                document.execCommand('delete', false, null);
+            }}"""
         )
+        await self._page.send("Input.insertText", {"text": text})
 
 
 class _CDPKeyboard:
@@ -270,8 +325,18 @@ class _CDPKeyboard:
         self._page = page
 
     async def press(self, key: str) -> None:
-        await self._page.send("Input.dispatchKeyEvent", {"type": "keyDown", "key": key})
-        await self._page.send("Input.dispatchKeyEvent", {"type": "keyUp", "key": key})
+        vk_map = {"Escape": 27, "Enter": 13, "Delete": 46, "Backspace": 8}
+        vk = vk_map.get(key, 0)
+        if key == "Escape":
+            await self._page.evaluate("() => document.querySelectorAll('.cdk-overlay-backdrop').forEach(b => b.click())")
+        params: dict[str, Any] = {"type": "rawKeyDown" if vk else "keyDown", "key": key, "code": key}
+        if vk:
+            params["windowsVirtualKeyCode"] = vk
+            params["nativeVirtualKeyCode"] = vk
+        await self._page.send("Input.dispatchKeyEvent", params)
+        up_params = dict(params)
+        up_params["type"] = "keyUp"
+        await self._page.send("Input.dispatchKeyEvent", up_params)
 
 
 class _CDPMouse:
@@ -396,6 +461,13 @@ class CDPPage:
         return val
 
 
+def _pick_free_port() -> int:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
 class CloudCDPFlowClient:
     """Drop-in replacement for FlowApiClient on Linux Cloud VMs using /usr/bin/google-chrome + CDP."""
 
@@ -403,11 +475,12 @@ class CloudCDPFlowClient:
         self,
         profile_dir: Optional[Path] = None,
         cookies_json_path: Optional[Path] = None,
-        debug_port: int = 9242,
+        debug_port: int = 0,
     ) -> None:
-        self.profile_dir = Path(profile_dir) if profile_dir else Path("/tmp/flow_cdp_chrome_profile")
+        self._temp_profile = Path(tempfile.mkdtemp(prefix="flow_cdp_chrome_"))
+        self.profile_dir = self._temp_profile
         self.cookies_json_path = cookies_json_path
-        self.debug_port = debug_port
+        self.debug_port = debug_port or _pick_free_port()
         self._proc: Optional[subprocess.Popen[bytes]] = None
         self._ws: Any = None
         self._page: Optional[CDPPage] = None
@@ -452,29 +525,72 @@ class CloudCDPFlowClient:
         await self._page.send("Page.enable")
         await self._page.send("DOM.enable")
         await self._page.send("Page.setInterceptFileChooserDialog", {"enabled": True})
+        await self._page.send(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {
+                "source": """
+                window.__flow_videos = [];
+                function __scanFlowRpc(t) {
+                    if (!t || !t.includes("flow-content.google/video/")) return;
+                    for (const line of t.split("\\n")) {
+                        if (!line.startsWith("[[")) continue;
+                        try {
+                            const outer = JSON.parse(line);
+                            for (const item of outer) {
+                                if (Array.isArray(item) && item[0] === "wrb.fr" && typeof item[2] === "string" && item[2].includes("flow-content.google/video/")) {
+                                    const inner = JSON.parse(item[2]);
+                                    const flat = JSON.stringify(inner);
+                                    const m = flat.match(/https:\\/\\/flow-content\\.google\\/video\\/[^"\\\\]+/);
+                                    if (m && inner[0]) {
+                                        if (!window.__flow_videos.some(v => v.uuid === inner[0])) {
+                                            window.__flow_videos.push({uuid: String(inner[0]), url: m[0], prompt: String((inner[5] && inner[5][1]) || "")});
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                }
+                const __origFetch = window.fetch;
+                window.fetch = async function(...args) {
+                    const res = await __origFetch.apply(this, args);
+                    try { res.clone().text().then(__scanFlowRpc); } catch (e) {}
+                    return res;
+                };
+                const __origOpen = XMLHttpRequest.prototype.open;
+                XMLHttpRequest.prototype.open = function(m, u, ...rest) {
+                    this.addEventListener("load", function() { try { __scanFlowRpc(this.responseText); } catch (e) {} });
+                    return __origOpen.call(this, m, u, ...rest);
+                };
+                """
+            },
+        )
 
         payload = load_flow_cookies_payload(self.cookies_json_path)
         cookies = payload.get("cookies") or []
         if cookies:
-            cdp_cookies = []
             for c in cookies:
                 if not c.get("name") or c.get("value") is None:
                     continue
+                name = str(c["name"])
+                dom = str(c.get("domain") or ".google.com")
+                path = str(c.get("path") or "/")
+                url_host = dom.lstrip(".")
                 entry: dict[str, Any] = {
-                    "name": str(c["name"]),
+                    "name": name,
                     "value": str(c["value"]),
-                    "domain": str(c.get("domain") or ".google.com"),
-                    "path": str(c.get("path") or "/"),
-                    "secure": bool(c.get("secure", True)),
+                    "url": f"https://{url_host}{path}",
+                    "path": path,
+                    "secure": True if (name.startswith("__Secure-") or name.startswith("__Host-")) else bool(c.get("secure", True)),
                     "httpOnly": bool(c.get("httpOnly", False)),
                 }
+                if dom.startswith(".") and not name.startswith("__Host-"):
+                    entry["domain"] = dom
                 if c.get("sameSite") in ("Strict", "Lax", "None"):
                     entry["sameSite"] = c["sameSite"]
                 if isinstance(c.get("expires"), (int, float)) and c["expires"] > 0:
                     entry["expires"] = float(c["expires"])
-                cdp_cookies.append(entry)
-            if cdp_cookies:
-                await self._page.send("Network.setCookies", {"cookies": cdp_cookies})
+                await self._page.send("Network.setCookie", entry)
 
         return self
 

@@ -259,6 +259,7 @@ async def render_act_from_manifest(
     manifest_path: Path = ROOT_DIR / "config" / "ep01_3act_manifest.json",
     clips_dir: Path = CLIPS_DIR,
     dry_run: bool = False,
+    max_shots: Optional[int] = None,
 ) -> list[Path]:
     """Render all shots for a specific Act (1, 2, or 3) from ep01_3act_manifest.json using real Google Flow Omni 1.1 Flash."""
     manifest = load_ep01_3act_manifest(manifest_path)
@@ -266,12 +267,13 @@ async def render_act_from_manifest(
     if not target_acts:
         raise ValueError(f"Act {act_id} not found in {manifest_path}")
     act = target_acts[0]
+    shots_to_process = act.shots[:max_shots] if max_shots is not None else act.shots
     clips_dir.mkdir(parents=True, exist_ok=True)
     cache = SceneRenderCache()
     rendered_paths: list[Path] = []
 
     if dry_run:
-        for shot in act.shots:
+        for shot in shots_to_process:
             _ = resolve_shot_start_frame(shot, cache, clips_dir=clips_dir)
             rendered_paths.append(clips_dir / f"{shot.shot_id}_omni.mp4")
         return rendered_paths
@@ -292,7 +294,6 @@ async def render_act_from_manifest(
 
     from veo_arcane_style.src.flow_conditioning import (
         EDITOR_LOCATOR,
-        FINISHED_TILE_LOCATOR,
         SUBMIT_LOCATOR,
         VIDEO_STATE_JS,
         attach_frame_ingredient,
@@ -313,16 +314,27 @@ async def render_act_from_manifest(
                 "Run `python scripts/export_flow_session_bundle.py` to refresh flow_session_cookies.json."
             )
 
-        for idx, shot in enumerate(act.shots, 1):
+        for idx, shot in enumerate(shots_to_process, 1):
             out_mp4 = clips_dir / f"{shot.shot_id}_omni.mp4"
             if out_mp4.is_file() and out_mp4.stat().st_size > 200_000:
                 cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
                 rendered_paths.append(out_mp4)
+                print(
+                    f"  [{idx}/{len(shots_to_process)}] Reusing verified {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)",
+                    flush=True,
+                )
                 continue
 
             start_img = resolve_shot_start_frame(shot, cache, clips_dir=clips_dir)
             for attempt in range(1, 3):
                 try:
+                    if attempt > 1:
+                        await page.goto(PROJECT_URL, wait_until="domcontentloaded", timeout=60000)
+                        await asyncio.sleep(5.0)
+                    print(
+                        f"  [{idx}/{len(shots_to_process)}] Submitting {shot.shot_id} ({shot.chain_mode}, start={start_img.name}) [attempt {attempt}]...",
+                        flush=True,
+                    )
                     await switch_to_videos_tab(page)
                     await asyncio.sleep(1.2)
                     await clear_prompt_box_ingredients(page)
@@ -335,11 +347,11 @@ async def render_act_from_manifest(
                         await attach_frame_ingredient(page, start_img.resolve())
 
                     state_before = await page.evaluate(VIDEO_STATE_JS)
-                    baseline_keys = {
-                        (item.get("video") or item.get("img") or "")
-                        for item in (state_before or {}).get("finished", [])
-                        if (item.get("video") or item.get("img"))
-                    }
+                    baseline_keys: set[str] = set()
+                    for item in (state_before or {}).get("finished", []):
+                        for k in (item.get("video"), item.get("img"), item.get("uuid")):
+                            if k:
+                                baseline_keys.add(str(k))
 
                     editor = page.locator(EDITOR_LOCATOR).last
                     await editor.click(timeout=5000)
@@ -366,6 +378,7 @@ async def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Render TTD Episode 1 via Omni 1.1 Flash")
     parser.add_argument("--act", type=int, choices=[1, 2, 3], default=None, help="Render specific Act (1..3) from 120-shot manifest")
     parser.add_argument("--all-acts", action="store_true", help="Render all 3 Acts (SHOT-001..SHOT-120) from 120-shot manifest")
+    parser.add_argument("--max-shots", type=int, default=None, help="Limit number of shots per Act in this run")
     parser.add_argument("--manifest", type=Path, default=ROOT_DIR / "config" / "ep01_3act_manifest.json")
     parser.add_argument("--dry-run", action="store_true", help="Validate manifest & frame-chaining without launching browser")
     args = parser.parse_args(argv)
@@ -373,14 +386,18 @@ async def main(argv: Optional[list[str]] = None) -> int:
     if args.all_acts:
         total = 0
         for act_id in (1, 2, 3):
-            paths = await render_act_from_manifest(act_id, manifest_path=args.manifest, dry_run=args.dry_run)
+            paths = await render_act_from_manifest(
+                act_id, manifest_path=args.manifest, dry_run=args.dry_run, max_shots=args.max_shots
+            )
             print(f"Act {act_id}: rendered {len(paths)} shots", flush=True)
             total += len(paths)
         print(f"All 3 Acts complete: {total} shots rendered in {CLIPS_DIR}", flush=True)
         return 0
 
     if args.act is not None:
-        paths = await render_act_from_manifest(args.act, manifest_path=args.manifest, dry_run=args.dry_run)
+        paths = await render_act_from_manifest(
+            args.act, manifest_path=args.manifest, dry_run=args.dry_run, max_shots=args.max_shots
+        )
         print(f"Act {args.act}: prepared {len(paths)} shots", flush=True)
         return 0
 

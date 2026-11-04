@@ -14,7 +14,7 @@ import uuid
 
 # Selectors from Google Flow client library
 EDITOR_LOCATOR = "div.ProseMirror, div[contenteditable='true']"
-SUBMIT_LOCATOR = "flow-generate-icon-button button, button.flow-submit-btn, button[aria-label='Submit'], button.submit-button"
+SUBMIT_LOCATOR = "button.generate-icon-button, flow-generate-icon-button button, button.flow-submit-btn, button[aria-label='Submit'], button.submit-button"
 LIVE_GATE_LOCATOR = "flow-permission-message, flow-approval-gate, mat-dialog-container"
 FINISHED_TILE_LOCATOR = "flow-video-tile:not(:has(flow-pending-tile))"
 VIDEO_STATE_JS = """() => {
@@ -29,6 +29,16 @@ VIDEO_STATE_JS = """() => {
             img: img ? (img.currentSrc || img.src || '') : ''
         });
     });
+    const rpcVideos = Array.isArray(window.__flow_videos) ? window.__flow_videos : [];
+    for (const rv of rpcVideos) {
+        if (rv && rv.url && rv.uuid) {
+            finished.push({
+                video: rv.url,
+                img: rv.uuid,
+                uuid: rv.uuid
+            });
+        }
+    }
     return { pending, finished };
 }"""
 
@@ -53,7 +63,11 @@ async def clear_prompt_box_ingredients(page) -> None:
         except Exception:
             break
 
-    rem_btns = page.locator("flow-creative-agent-prompt-box button[aria-label='Remove']")
+    rem_btns = page.locator(
+        "flow-creative-agent-prompt-box button[aria-label='Remove'], "
+        "flow-creative-agent-prompt-box flow-image-ingredient-chip button.remove-btn, "
+        "flow-creative-agent-prompt-box flow-image-ingredient-chip button:has(mat-icon:text-is('close'))"
+    )
     while await rem_btns.count() > 0:
         try:
             await rem_btns.first.click(timeout=3000)
@@ -87,17 +101,12 @@ async def attach_frame_ingredient(page, file_path: Path) -> None:
     chooser = await fc_info.value
 
     unique_filename = f"{file_path.stem}_{uuid.uuid4().hex[:6]}{file_path.suffix}"
-    try:
-        async with page.expect_response(lambda r: "maseQ" in r.url, timeout=45000):
-            await chooser.set_files({
-                "name": unique_filename,
-                "mimeType": "image/png",
-                "buffer": file_path.read_bytes(),
-            })
-    except Exception:
-        await asyncio.sleep(5.0)
-
-    await asyncio.sleep(2.5)
+    await chooser.set_files({
+        "name": unique_filename,
+        "mimeType": "image/png",
+        "buffer": file_path.read_bytes(),
+    })
+    await asyncio.sleep(4.5)
 
     picker = page.locator("flow-add-menu-popover-content").first
     if not await picker.is_visible():
@@ -155,29 +164,47 @@ async def await_flow_video(
         new_idx = -1
         new_key = ""
         for idx, item in enumerate(finished):
-            k = item.get("video") or item.get("img") or ""
-            if k and k not in baseline_keys:
+            vid_url = item.get("video") or ""
+            img_key = item.get("img") or ""
+            uuid_key = item.get("uuid") or ""
+            if uuid_key and vid_url:
+                base_vid_prefix = vid_url.split("?")[0]
+                if (
+                    uuid_key not in baseline_keys
+                    and vid_url not in baseline_keys
+                    and base_vid_prefix not in {b.split("?")[0] for b in baseline_keys}
+                ):
+                    return f"flow_{uuid_key[:24]}", vid_url
+            k = vid_url or img_key
+            if k and k not in baseline_keys and not uuid_key:
                 new_idx = idx
                 new_key = k
                 break
 
-        if (started or new_idx >= 0) and pending == 0 and new_idx >= 0 and new_key:
-            tile = page.locator(FINISHED_TILE_LOCATOR).nth(new_idx)
-            await tile.hover(timeout=5000)
-            await asyncio.sleep(2.0)
-            vid_src = await page.evaluate(
-                """(idx) => {
-                    const tiles = document.querySelectorAll('flow-video-tile:not(:has(flow-pending-tile))');
-                    const tile = tiles[idx];
-                    const vid = tile ? tile.querySelector('video') : null;
-                    return vid ? (vid.currentSrc || vid.src || '') : '';
-                }""",
-                new_idx,
-            )
-            await page.mouse.move(0, 0)
-            if vid_src:
-                token = new_key.split("/asb/")[-1].split("=")[0].split("?")[0] if "/asb/" in new_key else "clip"
-                return f"flow_{token[:24]}", vid_src
+        if (started or (time.monotonic() - t0) > 40.0) and pending == 0:
+            if new_idx >= 0 and new_key:
+                tile = page.locator(FINISHED_TILE_LOCATOR).nth(new_idx)
+                await tile.hover(timeout=5000)
+                await asyncio.sleep(2.0)
+                vid_src = await page.evaluate(
+                    """(idx) => {
+                        const tiles = document.querySelectorAll('flow-video-tile:not(:has(flow-pending-tile))');
+                        const tile = tiles[idx];
+                        const vid = tile ? tile.querySelector('video') : null;
+                        return vid ? (vid.currentSrc || vid.src || '') : '';
+                    }""",
+                    new_idx,
+                )
+                await page.mouse.move(0, 0)
+                if vid_src:
+                    token = new_key.split("/asb/")[-1].split("=")[0].split("?")[0] if "/asb/" in new_key else "clip"
+                    return f"flow_{token[:24]}", vid_src
+            # In headless Chrome, reload the project page so as29s RPC delivers the signed CDN video URL
+            started = False
+            t0 = time.monotonic()
+            await page.goto(page.url)
+            await asyncio.sleep(5.0)
+            await switch_to_videos_tab(page)
 
         if (time.monotonic() - t0) > 15.0:
             panel = page.locator("flow-agent-panel")
