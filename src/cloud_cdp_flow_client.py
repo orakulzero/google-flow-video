@@ -477,8 +477,8 @@ class CloudCDPFlowClient:
         cookies_json_path: Optional[Path] = None,
         debug_port: int = 0,
     ) -> None:
-        self._temp_profile = Path(tempfile.mkdtemp(prefix="flow_cdp_chrome_"))
-        self.profile_dir = self._temp_profile
+        self._persistent_profile = Path.home() / ".cache" / "flow_cdp_chrome_persistent"
+        self.profile_dir = self._persistent_profile
         self.cookies_json_path = cookies_json_path
         self.debug_port = debug_port or _pick_free_port()
         self._proc: Optional[subprocess.Popen[bytes]] = None
@@ -487,6 +487,11 @@ class CloudCDPFlowClient:
 
     async def __aenter__(self) -> "CloudCDPFlowClient":
         self.profile_dir.mkdir(parents=True, exist_ok=True)
+        for lock_name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+            lock_p = self.profile_dir / lock_name
+            if lock_p.exists() or lock_p.is_symlink():
+                lock_p.unlink(missing_ok=True)
+
         chrome_bin = resolve_chrome_binary()
         self._proc = subprocess.Popen(
             [
@@ -594,7 +599,29 @@ class CloudCDPFlowClient:
 
         return self
 
+    async def persist_rotated_cookies(self) -> None:
+        """Save rotated browser cookies (such as __Secure-1PSIDTS) back to flow_session_cookies.json when authenticated."""
+        if not self._page:
+            return
+        cur_url = str(self._page.url or "")
+        if "/project/" not in cur_url or "/about" in cur_url or "accounts.google.com" in cur_url:
+            return
+        try:
+            res = await self._page.send("Network.getAllCookies")
+            live_cookies = res.get("cookies") or []
+            if len(live_cookies) < 15:
+                return
+            target = self.cookies_json_path or DEFAULT_FLOW_COOKIES_PATHS[0]
+            existing = load_flow_cookies_payload(target)
+            existing["cookies"] = live_cookies
+            existing["cookie_count"] = len(live_cookies)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(existing, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        except Exception:
+            pass
+
     async def __aexit__(self, exc_type, exc, tb) -> None:
+        await self.persist_rotated_cookies()
         if self._ws:
             try:
                 await self._ws.close()
@@ -605,3 +632,4 @@ class CloudCDPFlowClient:
                 self._proc.terminate()
             except Exception:
                 pass
+

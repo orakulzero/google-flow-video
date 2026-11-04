@@ -417,6 +417,8 @@ async def render_act_from_manifest(
                 f"Google Flow redirected to unauthenticated URL ({page.url}). "
                 "Run `python scripts/export_flow_session_bundle.py` to refresh flow_session_cookies.json."
             )
+        if hasattr(client, "persist_rotated_cookies"):
+            await client.persist_rotated_cookies()
 
         for idx, shot in enumerate(shots_to_process, 1):
             out_mp4 = clips_dir / f"{shot.shot_id}_omni.mp4"
@@ -467,6 +469,8 @@ async def render_act_from_manifest(
                     await save_native_video(page, vid_src, vid_uuid, out_mp4)
                     sanitize_flow_clip_cuts(out_mp4, target_dur=shot.duration_sec)
                     cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
+                    if hasattr(client, "persist_rotated_cookies"):
+                        await client.persist_rotated_cookies()
                     rendered_paths.append(out_mp4)
                     _log(f"[Flow Omni 1.1 Flash] Rendered {shot.shot_id} -> {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)")
                     await asyncio.sleep(2.5)
