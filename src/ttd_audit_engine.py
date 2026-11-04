@@ -139,12 +139,37 @@ def audit_video_cut(video_path: Path, min_bytes: int = 500_000) -> Dict[str, Any
     fps_ok = abs(fps - 24.0) < 0.2
     passed = anti_mock and faststart and geo_ok and fps_ok
     return {
-        "size_bytes": sz,
-        "width": w,
-        "height": h,
-        "fps": round(fps, 2),
-        "frames": frames,
-        "faststart": faststart,
-        "anti_mock_passed": anti_mock,
-        "passed": passed,
+        "size_bytes": sz, "width": w, "height": h, "fps": round(fps, 2),
+        "frames": frames, "faststart": faststart, "anti_mock_passed": anti_mock, "passed": passed,
     }
+
+
+def audit_shot_with_manifest_profile(bgr: np.ndarray, shot_entry: Any) -> Dict[str, Any]:
+    """Per-shot VFX audit honoring allowed_vfx_tags from ep01_3act_manifest.json."""
+    d = shot_entry.to_dict() if hasattr(shot_entry, "to_dict") else dict(shot_entry)
+    shot_id = str(d.get("shot_id", "SHOT-001"))
+    tags = set(d.get("allowed_vfx_tags") or [])
+    base = audit_sparks_and_glow(bgr, shot_id)
+    if tags & {"FLAME_SKIN", "GOLD_AURA", "MANA_CANNON_BEAM", "GREEN_ACID", "MANA_STONES", "SOLO_HUD", "FLAME_SKIN_RED_GOLD", "MANA_CANNON_CYAN", "INDOMITABLE_GOLD_AURA", "ACID_GREEN_PROJECTILE"}:
+        base["vfx_exempted"] = sorted(tags)
+        base["passed"] = (base["lucas_glow"] == 0)
+    else:
+        base["vfx_exempted"] = []
+    return base
+
+
+def audit_chain_boundary_ssim(
+    prev_last_bgr: np.ndarray, next_first_bgr: np.ndarray, min_ssim: float = 0.92
+) -> Dict[str, Any]:
+    """Verify structural similarity across FRAME_CHAIN_LAST_TO_FIRST shot boundaries."""
+    g1 = cv2.cvtColor(prev_last_bgr, cv2.COLOR_BGR2GRAY).astype(np.float64)
+    g2 = cv2.cvtColor(next_first_bgr, cv2.COLOR_BGR2GRAY).astype(np.float64)
+    if g1.shape != g2.shape:
+        g2 = cv2.resize(g2, (g1.shape[1], g1.shape[0]))
+    mu1, mu2 = float(g1.mean()), float(g2.mean())
+    s1, s2 = float(g1.var()), float(g2.var())
+    s12 = float(((g1 - mu1) * (g2 - mu2)).mean())
+    c1, c2 = 6.5025, 58.5225
+    ssim = ((2 * mu1 * mu2 + c1) * (2 * s12 + c2)) / ((mu1**2 + mu2**2 + c1) * (s1 + s2 + c2))
+    return {"ssim": round(float(ssim), 4), "min_ssim": min_ssim, "passed": float(ssim) >= min_ssim}
+

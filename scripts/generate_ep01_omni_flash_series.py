@@ -1,31 +1,47 @@
-"""Generate Episode 1 (8 scenes) of 'Tyrant of the Tower Defense Game' in Google Flow using Omni 1.1 Flash."""
+"""Generate Episode 1 (8 legacy scenes or 120-shot 3-Act Stage 0 manifest) of 'Tyrant of the Tower Defense Game' in Google Flow using Omni 1.1 Flash."""
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
 from pathlib import Path
+import sys
 import time
+from typing import Optional
 
-from gflow_cli.api.client import FlowApiClient
-from gflow_cli.api.transports.agent_only_composer import (
-    EDITOR,
-    LIVE_GATE,
-    SUBMIT,
-    AgentOnlyComposer,
-    _Run,
-    download_video,
-)
-from gflow_cli.api.transports.migrated_composer import ASPECT_LIGATURE, VIDEO_MODEL_MENU_MATCHERS
-from gflow_cli.api.video import Aspect as VideoAspect, VideoModel
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
-os.environ["GFLOW_CLI_BROWSER_PROXY"] = "http://127.0.0.1:7890"
-os.environ["HTTPS_PROXY"] = "http://127.0.0.1:7890"
-os.environ["HTTP_PROXY"] = "http://127.0.0.1:7890"
-os.environ["GFLOW_CLI_FLOW_HOST"] = "flow.google.com"
-os.environ["GFLOW_CLI_AGENT_CONFIRM"] = "never"
-os.environ["GFLOW_CLI_BROWSER_WINDOW_POSITION"] = "-30000,-30000"
-os.environ["GFLOW_CLI_UPDATE_CHECK"] = "0"
+try:
+    from gflow_cli.api.client import FlowApiClient
+    from gflow_cli.api.transports.agent_only_composer import (
+        EDITOR,
+        LIVE_GATE,
+        SUBMIT,
+        AgentOnlyComposer,
+        _Run,
+        download_video,
+    )
+    from gflow_cli.api.transports.migrated_composer import ASPECT_LIGATURE, VIDEO_MODEL_MENU_MATCHERS
+    from gflow_cli.api.video import Aspect as VideoAspect, VideoModel
+except ImportError:
+    FlowApiClient = None  # type: ignore[assignment]
+    AgentOnlyComposer = None  # type: ignore[assignment]
+    EDITOR = LIVE_GATE = SUBMIT = ""
+    _Run = download_video = None  # type: ignore[assignment]
+    ASPECT_LIGATURE = {}
+    VIDEO_MODEL_MENU_MATCHERS = {}
+    VideoAspect = VideoModel = None  # type: ignore[assignment]
+
+from src.flow_repo_adaptations import SceneRenderCache
+from src.ttd_storyboard import ShotManifestEntry, load_ep01_3act_manifest
+
+os.environ.setdefault("GFLOW_CLI_FLOW_HOST", "flow.google.com")
+os.environ.setdefault("GFLOW_CLI_AGENT_CONFIRM", "never")
+os.environ.setdefault("GFLOW_CLI_BROWSER_WINDOW_POSITION", "-30000,-30000")
+os.environ.setdefault("GFLOW_CLI_UPDATE_CHECK", "0")
 
 CANON_DIR = Path("output/ttd_arcane_characters/episode1_canon")
 SHEETS_DIR = CANON_DIR / "arcane_sheets"
@@ -150,10 +166,230 @@ async def attach_ingredient_file(page, file_path: Path) -> None:
         await asyncio.sleep(1.0)
 
 
-async def main() -> int:
-    CLIPS_DIR.mkdir(parents=True, exist_ok=True)
-    prof = Path(r"C:\Users\Orakul Grey\AppData\Local\ffroliva\gflow-cli\profile_default")
+def resolve_flow_browser_profile() -> Path:
+    """Resolve Flow browser profile path across Linux and Windows without hardcoded user paths."""
+    env_prof = os.environ.get("GFLOW_CLI_PROFILE_DIR", "").strip()
+    if env_prof:
+        return Path(env_prof)
+    local_app = os.environ.get("LOCALAPPDATA", "").strip()
+    if local_app:
+        return Path(local_app) / "ffroliva" / "gflow-cli" / "profile_default"
+    return Path.home() / ".local" / "share" / "gflow-cli" / "profile_default"
 
+
+def resolve_shot_start_frame(
+    shot: ShotManifestEntry,
+    cache: SceneRenderCache,
+    clips_dir: Path = CLIPS_DIR,
+    root_dir: Path = ROOT_DIR,
+    prev_clip_path: Optional[Path] = None,
+) -> Path:
+    """
+    Resolve start frame image for a shot according to its chain_mode:
+    - HARD_ANCHOR_RESET (chain_depth == 0): uses curated artwork `shot.start_frame_anchor`.
+    - FRAME_CHAIN_LAST_TO_FIRST (1 <= chain_depth <= 3): extracts and caches the final frame
+      of the preceding shot clip via `SceneRenderCache.extract_and_cache_last_frame()`.
+    """
+    if shot.chain_mode == "HARD_ANCHOR_RESET" or shot.chain_depth == 0:
+        p = Path(shot.start_frame_anchor)
+        return p if p.is_absolute() else (root_dir / p)
+
+    shot_num = int(shot.shot_id.split("-")[-1])
+    prev_shot_id = f"SHOT-{shot_num - 1:03d}"
+    cached_last = cache.cache_dir / f"{prev_shot_id}_last.jpg"
+    if cached_last.is_file() and cached_last.stat().st_size > 100:
+        return cached_last
+
+    source_clip = prev_clip_path or (clips_dir / f"{prev_shot_id}_omni.mp4")
+    if source_clip.is_file():
+        return cache.extract_and_cache_last_frame(prev_shot_id, source_clip)
+
+    # Fallback if running in dry-run without rendered clip
+    p = Path(shot.start_frame_anchor)
+    return p if p.is_absolute() else (root_dir / p)
+
+
+def ensure_canonical_anchor_images(root_dir: Path = ROOT_DIR) -> None:
+    """Populate canonical 1280x720 anchor frames and turnaround sheets from staged 720p Flow clips if missing."""
+    import shutil
+    import subprocess
+
+    ff = shutil.which("ffmpeg") or str(Path.home() / ".local" / "bin" / "ffmpeg")
+    shots_dir = root_dir / "assets" / "ep01_shots"
+    if not shots_dir.is_dir():
+        return
+
+    scenes_dir = root_dir / SCENES_DIR
+    sheets_dir = root_dir / SHEETS_DIR
+    scenes_dir.mkdir(parents=True, exist_ok=True)
+    sheets_dir.mkdir(parents=True, exist_ok=True)
+
+    mapping = [
+        (scenes_dir / "scene_01_gamer_clear.jpg", "ttd_ep01_shot_05_clip_720p.mp4", "1.5"),
+        (scenes_dir / "scene_03_ash_awakening.jpg", "ttd_ep01_shot_07_clip_720p.mp4", "1.5"),
+        (scenes_dir / "scene_05_spider_jaws.jpg", "ttd_ep01_shot_10_clip_720p.mp4", "2.0"),
+        (scenes_dir / "scene_06b_lucas_hero.jpg", "ttd_ep01_shot_04_clip_720p.mp4", "1.8"),
+        (scenes_dir / "scene_09_guard_party.jpg", "ttd_ep01_shot_08_clip_720p.mp4", "1.5"),
+        (scenes_dir / "scene_10_inverted_traits.jpg", "ttd_ep01_shot_09_clip_720p.mp4", "1.5"),
+        (scenes_dir / "scene_12_mana_cannon_queen.jpg", "ttd_ep01_shot_12_clip_720p.mp4", "2.0"),
+        (sheets_dir / "ep01_ash_gamer_arcane.jpg", "ttd_ep01_shot_01_clip_720p.mp4", "1.2"),
+        (sheets_dir / "ep01_ash_commander_arcane.jpg", "ttd_ep01_shot_07_clip_720p.mp4", "2.2"),
+        (sheets_dir / "ep01_black_spider_arcane.jpg", "ttd_ep01_shot_10_clip_720p.mp4", "2.8"),
+        (sheets_dir / "ep01_lucas_knight_arcane.jpg", "ttd_ep01_shot_03_clip_720p.mp4", "1.8"),
+        (sheets_dir / "ep01_demian_priest_arcane.jpg", "ttd_ep01_shot_08_clip_720p.mp4", "2.2"),
+        (sheets_dir / "ep01_lily_flameskin_arcane.jpg", "ttd_ep01_shot_09_clip_720p.mp4", "2.2"),
+        (sheets_dir / "ep01_mana_cannon_arcane.jpg", "ttd_ep01_shot_11_clip_720p.mp4", "2.0"),
+    ]
+    for dst_img, src_clip_name, ts in mapping:
+        src_clip = shots_dir / src_clip_name
+        if not dst_img.is_file() and src_clip.is_file():
+            subprocess.run(
+                [ff, "-y", "-ss", ts, "-i", str(src_clip), "-frames:v", "1", "-q:v", "2", str(dst_img)],
+                check=False,
+                capture_output=True,
+                timeout=20,
+            )
+
+
+PROJECT_URL = "https://flow.google.com/project/7d9a2a67-9cd2-4a79-932e-717d2e29257f"
+
+
+async def render_act_from_manifest(
+    act_id: int,
+    manifest_path: Path = ROOT_DIR / "config" / "ep01_3act_manifest.json",
+    clips_dir: Path = CLIPS_DIR,
+    dry_run: bool = False,
+) -> list[Path]:
+    """Render all shots for a specific Act (1, 2, or 3) from ep01_3act_manifest.json using real Google Flow Omni 1.1 Flash."""
+    manifest = load_ep01_3act_manifest(manifest_path)
+    target_acts = [a for a in manifest.acts if a.act_id == act_id]
+    if not target_acts:
+        raise ValueError(f"Act {act_id} not found in {manifest_path}")
+    act = target_acts[0]
+    clips_dir.mkdir(parents=True, exist_ok=True)
+    cache = SceneRenderCache()
+    rendered_paths: list[Path] = []
+
+    if dry_run:
+        for shot in act.shots:
+            _ = resolve_shot_start_frame(shot, cache, clips_dir=clips_dir)
+            rendered_paths.append(clips_dir / f"{shot.shot_id}_omni.mp4")
+        return rendered_paths
+
+    ensure_canonical_anchor_images(ROOT_DIR)
+    prof = resolve_flow_browser_profile()
+
+    client_cls = FlowApiClient
+    if client_cls is None or not hasattr(client_cls, "__aenter__"):
+        from src.cloud_cdp_flow_client import CloudCDPFlowClient, load_flow_cookies_payload
+        cookie_payload = load_flow_cookies_payload()
+        if not cookie_payload.get("cookies"):
+            raise RuntimeError(
+                "No authenticated Google Flow session cookies found in 04_flow_session_state/flow_session_cookies.json. "
+                "Run `python scripts/export_flow_session_bundle.py` on Windows first."
+            )
+        client_cls = CloudCDPFlowClient
+
+    from veo_arcane_style.src.flow_conditioning import (
+        EDITOR_LOCATOR,
+        FINISHED_TILE_LOCATOR,
+        SUBMIT_LOCATOR,
+        VIDEO_STATE_JS,
+        attach_frame_ingredient,
+        await_flow_video,
+        clear_prompt_box_ingredients,
+        save_native_video,
+        switch_to_videos_tab,
+    )
+
+    async with client_cls(prof) as client:
+        page = client._page
+        assert page is not None
+        await page.goto(PROJECT_URL, wait_until="domcontentloaded", timeout=60000)
+        await asyncio.sleep(6.0)
+        if "/about" in str(page.url) or "accounts.google.com" in str(page.url):
+            raise RuntimeError(
+                f"Google Flow redirected to unauthenticated URL ({page.url}). "
+                "Run `python scripts/export_flow_session_bundle.py` to refresh flow_session_cookies.json."
+            )
+
+        for idx, shot in enumerate(act.shots, 1):
+            out_mp4 = clips_dir / f"{shot.shot_id}_omni.mp4"
+            if out_mp4.is_file() and out_mp4.stat().st_size > 200_000:
+                cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
+                rendered_paths.append(out_mp4)
+                continue
+
+            start_img = resolve_shot_start_frame(shot, cache, clips_dir=clips_dir)
+            for attempt in range(1, 3):
+                try:
+                    await switch_to_videos_tab(page)
+                    await asyncio.sleep(1.2)
+                    await clear_prompt_box_ingredients(page)
+
+                    for sheet_name in shot.character_sheet_refs[:2]:
+                        sheet_p = ROOT_DIR / SHEETS_DIR / sheet_name
+                        if sheet_p.is_file():
+                            await attach_frame_ingredient(page, sheet_p.resolve())
+                    if start_img.is_file():
+                        await attach_frame_ingredient(page, start_img.resolve())
+
+                    state_before = await page.evaluate(VIDEO_STATE_JS)
+                    baseline_keys = {
+                        (item.get("video") or item.get("img") or "")
+                        for item in (state_before or {}).get("finished", [])
+                        if (item.get("video") or item.get("img"))
+                    }
+
+                    editor = page.locator(EDITOR_LOCATOR).last
+                    await editor.click(timeout=5000)
+                    await editor.press_sequentially(shot.omni_visual_prompt, delay=4)
+                    await asyncio.sleep(0.5)
+                    await page.locator(SUBMIT_LOCATOR).last.click(timeout=5000)
+
+                    vid_uuid, vid_src = await await_flow_video(page, baseline_keys, timeout_s=360.0)
+                    await save_native_video(page, vid_src, vid_uuid, out_mp4)
+                    cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
+                    rendered_paths.append(out_mp4)
+                    print(f"  [Flow Omni 1.1 Flash] Rendered {shot.shot_id} -> {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)", flush=True)
+                    break
+                except Exception as exc:
+                    print(f"  [WARN] {shot.shot_id} attempt {attempt} failed: {exc}", flush=True)
+                    if attempt == 2:
+                        raise
+                    await asyncio.sleep(4.0)
+
+    return rendered_paths
+
+
+async def main(argv: Optional[list[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description="Render TTD Episode 1 via Omni 1.1 Flash")
+    parser.add_argument("--act", type=int, choices=[1, 2, 3], default=None, help="Render specific Act (1..3) from 120-shot manifest")
+    parser.add_argument("--all-acts", action="store_true", help="Render all 3 Acts (SHOT-001..SHOT-120) from 120-shot manifest")
+    parser.add_argument("--manifest", type=Path, default=ROOT_DIR / "config" / "ep01_3act_manifest.json")
+    parser.add_argument("--dry-run", action="store_true", help="Validate manifest & frame-chaining without launching browser")
+    args = parser.parse_args(argv)
+
+    if args.all_acts:
+        total = 0
+        for act_id in (1, 2, 3):
+            paths = await render_act_from_manifest(act_id, manifest_path=args.manifest, dry_run=args.dry_run)
+            print(f"Act {act_id}: rendered {len(paths)} shots", flush=True)
+            total += len(paths)
+        print(f"All 3 Acts complete: {total} shots rendered in {CLIPS_DIR}", flush=True)
+        return 0
+
+    if args.act is not None:
+        paths = await render_act_from_manifest(args.act, manifest_path=args.manifest, dry_run=args.dry_run)
+        print(f"Act {args.act}: prepared {len(paths)} shots", flush=True)
+        return 0
+
+
+    CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+    if args.dry_run or FlowApiClient is None:
+        return 0
+
+    prof = resolve_flow_browser_profile()
     async with FlowApiClient(prof) as client:
         page = client._page
         assert page is not None
@@ -224,3 +460,4 @@ async def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(asyncio.run(main()))
+

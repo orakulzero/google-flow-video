@@ -304,15 +304,16 @@ def _normalize_acoustic_segments(
 
 def resolve_bookmark_timestamps(
     bookmarks: Union[BookmarkParseResult, Sequence[Any]],
-    total_duration_sec: float,
+    total_duration_sec: float = 0.0,
     acoustic_segments: Optional[Sequence[Any]] = None,
-    fps: int = 15,
+    fps: int = 24,
+    duration_sec: Optional[float] = None,
 ) -> ResolvedBookmarkMap:
     """
     Resolve parsed bookmarks to exact monotonic timestamps in `[0.0, total_duration_sec]`
     and frame offsets in `[0, total_frames]`, optionally aligned against acoustic VAD segments.
     """
-    dur = max(0.0, float(total_duration_sec))
+    dur = max(0.0, float(duration_sec if duration_sec is not None else total_duration_sec))
     total_frames = max(1, int(round(dur * max(1, fps))))
 
     if isinstance(bookmarks, BookmarkParseResult):
@@ -929,3 +930,42 @@ class SceneRenderCache:
             "total_lookups": total,
             "hit_rate": round(float(self.hits) / float(total), 4) if total > 0 else 0.0,
         }
+
+    def extract_and_cache_last_frame(
+        self,
+        shot_id: str,
+        clip_path: Union[str, Path],
+        ffmpeg_bin: str = "ffmpeg",
+    ) -> Path:
+        """
+        Extract the final frame of a rendered shot clip (`-sseof -0.05`) and cache it
+        under `.scene_cache/{shot_id}_last.jpg` for `FRAME_CHAIN_LAST_TO_FIRST` chaining.
+        """
+        import subprocess
+
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        safe_id = re.sub(r"[^a-zA-Z0-9_-]", "_", str(shot_id))
+        out_jpg = self.cache_dir / f"{safe_id}_last.jpg"
+        clip_p = Path(clip_path)
+        if not clip_p.is_file():
+            raise FileNotFoundError(f"Cannot extract last frame; clip not found: {clip_p}")
+
+        exe = shutil.which(ffmpeg_bin) or str(Path.home() / ".local" / "bin" / "ffmpeg")
+        if not Path(exe).is_file():
+            exe = ffmpeg_bin
+        cmd = [
+            exe,
+            "-y",
+            "-sseof",
+            "-0.05",
+            "-i",
+            str(clip_p),
+            "-frames:v",
+            "1",
+            "-q:v",
+            "2",
+            str(out_jpg),
+        ]
+        subprocess.run(cmd, check=True, capture_output=True, timeout=30)
+        return out_jpg
+

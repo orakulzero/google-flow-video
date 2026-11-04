@@ -998,12 +998,15 @@ def get_monster_anchor(monster_id: str) -> str:
 
 def get_environment(env_id: str = "crossroads_fortress") -> EnvironmentSpec:
     """Lookup environment profile by ID."""
+    eid = env_id.strip().lower()
+    if eid in STAGE0_ENVIRONMENTS:
+        return STAGE0_ENVIRONMENTS[eid]
     return CROSSROADS_FORTRESS
 
 
 def get_environment_anchor(env_id: str = "crossroads_fortress") -> str:
-    """Retrieve the exact Veo 3.1 visual anchor prompt token for Crossroads Fortress."""
-    return CROSSROADS_FORTRESS.master_visual_anchor
+    """Retrieve the exact visual anchor prompt token for Crossroads Fortress or Forward Base."""
+    return get_environment(env_id).master_visual_anchor
 
 
 def get_color_palette() -> Dict[str, ColorToken]:
@@ -1023,7 +1026,7 @@ def get_color_token(token_name: str) -> ColorToken:
 
 
 def get_master_negative_prompt() -> str:
-    """Return the master negative prompt string for Veo 3.1 generation."""
+    """Return the master negative prompt string for Veo 3.1 / Omni 1.1 Flash generation."""
     return TTD_MASTER_NEGATIVE_PROMPT
 
 
@@ -1040,7 +1043,7 @@ def build_veo_scene_prompt(
     **kwargs: Any,
 ) -> str:
     """
-    Construct a complete multi-layer Veo 3.1 prompt combining camera motion,
+    Construct a complete multi-layer scene prompt combining camera motion,
     environmental anchors, character anchors, monster anchors, physical action,
     lighting, and dark fantasy anime style directives.
     """
@@ -1077,3 +1080,338 @@ def build_veo_scene_prompt(
 
 # Alias ensuring compatibility with unified TTD prompt generation contract
 build_ttd_scene_prompt = build_veo_scene_prompt
+
+
+# ==============================================================================
+# Stage 0 Canonical Profiles (Prologue + Chapters 001-010 Ranobe / Manhwa Ep 1-2)
+# ==============================================================================
+
+CHARACTER_ASH_STAGE0 = "ash_stage0"
+CHARACTER_LUCAS_STAGE0 = "lucas_stage0"
+CHARACTER_MAGE_LILY = "mage_lily"
+CHARACTER_HEALER_DAMIEN = "healer_damien"
+CHARACTER_SHIELD_KEN = "shield_knight_ken"
+CHARACTER_DIRECTOR_EIDER = "director_eider"
+
+_ASH_STAGE0_PROFILE = CharacterProfile(
+    character_id="ash_stage0",
+    name_en="3rd Imperial Prince Ash 'Born Hater' Everblack",
+    name_ru="3-\u0439 \u0438\u043c\u043f\u0435\u0440\u0441\u043a\u0438\u0439 \u043f\u0440\u0438\u043d\u0446 \u042d\u0448 \u042d\u0432\u0435\u0440\u0431\u043b\u044d\u043a",
+    title_en="3rd Imperial Prince (EX-Rank Beginner Commander)",
+    title_ru="3-\u0439 \u0438\u043c\u043f\u0435\u0440\u0441\u043a\u0438\u0439 \u043f\u0440\u0438\u043d\u0446 (\u041d\u0430\u0447\u0438\u043d\u0430\u044e\u0449\u0438\u0439 \u043a\u043e\u043c\u0430\u043d\u0434\u0438\u0440 EX-\u0440\u0430\u043d\u0433\u0430)",
+    role="Protagonist, EX-Rank Beginner Commander -> Tyrant of the Battlefield",
+    archetype="Hell-Mode Streamer Transmigrated into 23-Year-Old 3rd Prince",
+    physical_appearance=(
+        "23-year-old lean aristocratic commander, disheveled jet-black hair, pale skin with insomnia shadows, "
+        "sharp amber-gold eyes"
+    ),
+    facial_features="Sharp aristocratic jawline, dark eye circles, piercing amber-gold irises",
+    costume_and_armor="Black-and-gold Imperial Commander uniform with crimson cape and blackened iron gorget",
+    weapons_and_artifacts=[
+        "Commander saber and dagger (used to test Lily's Flame Skin)",
+        "Tactical map of the Forward Base (Trait: Map Making)",
+    ],
+    psychological_profile=(
+        "Unbroken gamer resolve; awakens Passive Skill [Indomitable Commander] in Stage 0 to grant 10m mental "
+        "status immunity and snap Damien out of despair after Ken's death"
+    ),
+    master_visual_anchor=(
+        "[Character: 3rd Imperial Prince Ash Everblack, age 23, EX-Rank Beginner Commander, disheveled jet-black hair, "
+        "sharp amber-gold irises, black-and-gold Imperial Commander uniform with crimson cape, holding tactical dagger "
+        "and saber, Fortiche Arcane 2.5D painterly style]"
+    ),
+    key_tokens=[
+        "3rd Imperial Prince",
+        "EX-Rank",
+        "Map Making",
+        "Evil Eye of Command",
+        "Indomitable Commander",
+    ],
+    voice_persona="Alnilam",
+    voice_style="authoritative young male commander",
+)
+
+_LUCAS_STAGE0_PROFILE = CharacterProfile(
+    character_id="lucas_stage0",
+    name_en="Knight Lucas MacGregor (Stage 0)",
+    name_ru="\u0420\u044b\u0446\u0430\u0440\u044c \u041b\u0443\u043a\u0430\u0441 \u041c\u0430\u043a\u0433\u0440\u0435\u0433\u043e\u0440",
+    title_en="3rd Prince's Bodyguard Knight (SSR-Rank Intermediate Knight)",
+    title_ru="\u0420\u044b\u0446\u0430\u0440\u044c-\u0442\u0435\u043b\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0435\u043b\u044c 3-\u0433\u043e \u043f\u0440\u0438\u043d\u0446\u0430 (SSR-\u0440\u0430\u043d\u0433)",
+    role="SSR-Rank Vanguard Bodyguard Knight, Sole Survivor of Stage 50 Cathedral",
+    archetype="Loyal Vanguard Knight Warned by Original Ash the Night Before",
+    physical_appearance="22-year-old towering muscular knight, dirty-blonde hair, weathered bronze-tan skin",
+    facial_features="Left cheek claw scar, natural steel-gray irises",
+    costume_and_armor="Silver-and-dark-steel full plate armor with white-and-blue knight cape",
+    weapons_and_artifacts=["Heavy steel broadsword", "Spiked iron tower shield"],
+    psychological_profile=(
+        "Unquestioning loyalty to Prince Ash because the original Ash warned him the night before possession: "
+        "'Starting tomorrow I will act like a completely different person, but do not doubt me and continue to assist me'"
+    ),
+    master_visual_anchor=(
+        "[Character: SSR-Rank Knight Lucas MacGregor, age 22, dirty-blonde hair, weathered bronze-tan skin, "
+        "left cheek claw scar, natural steel-gray irises, silver-and-dark-steel plate armor with white-and-blue cape, "
+        "wielding broadsword, Fortiche Arcane 2.5D painterly style]"
+    ),
+    key_tokens=["SSR-Rank", "Beastification", "dirty-blonde", "warned the night before"],
+    voice_persona="Orus",
+    voice_style="deep resonant loyal knight",
+)
+
+_MAGE_LILY_PROFILE = CharacterProfile(
+    character_id="mage_lily",
+    name_en="Fire Mage Lily",
+    name_ru="\u041c\u0430\u0433 \u043e\u0433\u043d\u044f \u041b\u0438\u043b\u0438",
+    title_en="Guard Party Fire Attack Mage (R-Rank, Trait: Flame Skin)",
+    title_ru="\u041c\u0430\u0433 \u043e\u0433\u043d\u044f \u043e\u0442\u0440\u044f\u0434\u0430 \u0441\u0442\u0440\u0430\u0436\u0438 (R-\u0440\u0430\u043d\u0433, \u041e\u0433\u043d\u0435\u043d\u043d\u0430\u044f \u043a\u043e\u0436\u0430)",
+    role="R-Rank Fire Mage & Central Battery Entrance Tank",
+    archetype="Inverted-Trait Melee Mage Tank",
+    physical_appearance="Young red-haired fire mage in white tunic, brown leather corset vest, and red hooded cloak",
+    facial_features="Fierce amber-red eyes, defiant expression",
+    costume_and_armor="White mage tunic, brown leather corset vest, red hooded cloak",
+    weapons_and_artifacts=["Basic ember spell", "Trait: Flame Skin (turns body into flame to evade blades, consumes MP)"],
+    psychological_profile=(
+        "Possesses [Flame Skin] born from extreme childhood terror of blades after goblins killed her parents; "
+        "turns her body into flame to evade physical attacks at the cost of MP per evasion. Blocks the sole narrow "
+        "entrance to the central cannon battery until her MP hits 0, suffering permanent lower-body paralysis"
+    ),
+    master_visual_anchor=(
+        "[Character: R-Rank Fire Mage Lily, red hair, white tunic, brown leather corset vest, red hooded cloak, "
+        "body wreathed in fiery golden-red Flame Skin aura evading blade strikes at the cost of MP, "
+        "Fortiche Arcane 2.5D painterly style]"
+    ),
+    key_tokens=[
+        "R-Rank",
+        "Fire Mage",
+        "Flame Skin",
+        "terror of blades",
+        "consumes MP",
+        "lower-body paralysis",
+    ],
+    voice_persona="Aoede",
+    voice_style="fiery defiant young female mage",
+)
+
+_HEALER_DAMIEN_PROFILE = CharacterProfile(
+    character_id="healer_damien",
+    name_en="Healer Priest Damien",
+    name_ru="\u0416\u0440\u0435\u0446-\u0446\u0435\u043b\u0438\u0442\u0435\u043b\u044c \u0414\u044d\u043c\u0438\u0435\u043d",
+    title_en="Guard Party Intermediate Healer & Ancient Mana Cannon Gunner (N-Rank)",
+    title_ru="\u0426\u0435\u043b\u0438\u0442\u0435\u043b\u044c \u0438 \u043d\u0430\u0432\u043e\u0434\u0447\u0438\u043a \u0414\u0440\u0435\u0432\u043d\u0435\u0439 \u041c\u0430\u043d\u0430-\u041f\u0443\u0448\u043a\u0438 (N-\u0440\u0430\u043d\u0433)",
+    role="N-Rank Healer Priest & God-Tier Artillery Sniper",
+    archetype="Timid Priest with Clairvoyance / All-Seeing Eye (+50 Vision, +999 Accuracy)",
+    physical_appearance="18-year-old slender priest with tousled brown hair, thick round spectacles, black-and-gold cassock",
+    facial_features="Gentle eyes behind thick spectacles that ignite with golden sniper rings and bleed tears when strained",
+    costume_and_armor="Black-and-gold priest cassock and white stole",
+    weapons_and_artifacts=[
+        "Artifact: Ancient Mana Cannon (SR)",
+        "Trait: Clairvoyance / All-Seeing Eye (Vision Range +50, Accuracy Score +999)",
+        "Skills: Light of Healing, Light of Detoxification",
+    ],
+    psychological_profile=(
+        "Close friend of Shield Knight Ken; falls into panic and despair when Ken dies outside the walls, "
+        "then recovers when Ash provokes him and awakens [Indomitable Commander], firing the fatal 2nd shot "
+        "that kills Black Spider Queen Orlop"
+    ),
+    master_visual_anchor=(
+        "[Character: N-Rank Healer Priest Damien, age 18, tousled brown hair, removing thick round spectacles, "
+        "black-and-gold priest cassock, pupils glowing with golden All-Seeing Eye sniper reticle shedding bloody tears, "
+        "aiming the ornate white-and-gold SR Ancient Mana Cannon, Fortiche Arcane 2.5D painterly style]"
+    ),
+    key_tokens=[
+        "N-Rank",
+        "All-Seeing Eye",
+        "Accuracy +999",
+        "Ancient Mana Cannon (SR)",
+        "second shot kills Queen Orlop",
+    ],
+    voice_persona="Fenrir",
+    voice_style="earnest young male priest",
+)
+
+_SHIELD_KEN_PROFILE = CharacterProfile(
+    character_id="shield_knight_ken",
+    name_en="Shield Knight Ken",
+    name_ru="\u0429\u0438\u0442\u043e\u043d\u043e\u0441\u0435\u0446 \u041a\u0435\u043d",
+    title_en="Guard Party Shield Knight & Decoy Runner (N-Rank)",
+    title_ru="\u0429\u0438\u0442\u043e\u043d\u043e\u0441\u0435\u0446 \u043e\u0442\u0440\u044f\u0434\u0430 \u0441\u0442\u0440\u0430\u0436\u0438 (N-\u0440\u0430\u043d\u0433)",
+    role="N-Rank Shield Knight, Former Petty Thief, Damien's Friend",
+    archetype="Self-Sacrificing Family Man & Stealth Aggro Decoy",
+    physical_appearance="Scarred veteran shield-fighter in dark iron half-plate armor carrying a family locket",
+    facial_features="Grim determined expression, rugged stubble, protective gaze",
+    costume_and_armor="Weathered dark iron shield-knight armor with silver family locket of wife and child",
+    weapons_and_artifacts=[
+        "Iron kite shield and short sword",
+        "Silver family locket with portrait of wife and child",
+        "Trait: A Petty Thief's Way of Survival (consumes own HP to erase presence and drop enemy aggro)",
+    ],
+    psychological_profile=(
+        "Former petty thief who became a knight for his family and befriended Damien; sorties alone outside the "
+        "Forward Base to draw the Black Spider swarm away from the cannon battery, loses too much HP to activate "
+        "his stealth trait, and dies heroically in action"
+    ),
+    master_visual_anchor=(
+        "[Character: N-Rank Shield Knight Ken, rugged scarred fighter in dark iron half-plate armor holding iron shield "
+        "and bloodstained silver family locket, drawing the Black Spider swarm outside the fortress walls, "
+        "Fortiche Arcane 2.5D painterly style]"
+    ),
+    key_tokens=[
+        "N-Rank",
+        "A Petty Thief's Way of Survival",
+        "consumes HP",
+        "family locket",
+        "dies in action outside walls",
+    ],
+    voice_persona="Charon",
+    voice_style="gritty seasoned male shield knight",
+)
+
+_DIRECTOR_EIDER_PROFILE = CharacterProfile(
+    character_id="director_eider",
+    name_en="Aider (Eider)",
+    name_ru="\u042d\u0439\u0434\u0435\u0440",
+    title_en="Game Director & Administrative Aide of Crossroads",
+    title_ru="\u0420\u0430\u0441\u043f\u043e\u0440\u044f\u0434\u0438\u0442\u0435\u043b\u044c \u0438\u0433\u0440\u044b \u0438 \u043f\u043e\u043c\u043e\u0449\u043d\u0438\u043a \u0432 \u041f\u0435\u0440\u0435\u043a\u0440\u0451\u0441\u0442\u043a\u0435",
+    role="System Game Director & Prince Ash's Administrative Aide",
+    archetype="Enigmatic Smiling Administrator",
+    physical_appearance="Slender bespectacled administrator in immaculate dark tailored vest and coat",
+    facial_features="Polite inscrutable smile, sharp eyes behind thin spectacles",
+    costume_and_armor="Formal dark administrative attire of Crossroads",
+    weapons_and_artifacts=["System survey ledger and Crossroads administrative seal"],
+    psychological_profile="Pulls the streamer into Stage 0 after the Stage 50 clear survey and greets the 9 survivors at Crossroads",
+    master_visual_anchor=(
+        "[Character: Director Eider, slender administrator in formal dark coat and spectacles with an enigmatic polite smile, "
+        "Fortiche Arcane 2.5D painterly style]"
+    ),
+    key_tokens=["Game Director", "Crossroads Aide", "Stage 50 survey"],
+    voice_persona="Puck",
+    voice_style="enigmatic polite male administrator",
+)
+
+STAGE0_CHARACTERS: Dict[str, CharacterProfile] = {
+    "ash_stage0": _ASH_STAGE0_PROFILE,
+    "lucas_stage0": _LUCAS_STAGE0_PROFILE,
+    "mage_lily": _MAGE_LILY_PROFILE,
+    "healer_damien": _HEALER_DAMIEN_PROFILE,
+    "shield_knight_ken": _SHIELD_KEN_PROFILE,
+    "director_eider": _DIRECTOR_EIDER_PROFILE,
+    "damien": _HEALER_DAMIEN_PROFILE,
+    "ken": _SHIELD_KEN_PROFILE,
+    "eider": _DIRECTOR_EIDER_PROFILE,
+}
+CHARACTERS.update(STAGE0_CHARACTERS)
+
+BOSS_BLACK_SPIDER_QUEEN_ORLOP = "black_spider_queen_orlop"
+MONSTER_BLACK_SPIDER_SIEGE = "black_spider_siege"
+MONSTER_BLACK_SPIDER_ASSAULT = "black_spider_assault"
+
+_ORLOP_SPEC = MonsterSpec(
+    species_id="black_spider_queen_orlop",
+    name_en="Black Spider Queen Orlop (Lv.??)",
+    name_ru="\u0427\u0451\u0440\u043d\u0430\u044f \u041f\u0430\u0443\u0447\u044c\u044f \u041a\u043e\u0440\u043e\u043b\u0435\u0432\u0430 \u041e\u0440\u043b\u043e\u043f",
+    tier="Stage 0 Boss / Nightmare Legion Commander Rank 6",
+    category="Stage 0 Arachnid Commander Boss",
+    threat_tier="Lv.?? Nightmare Legion Commander Rank 6",
+    visual_anchors=[
+        "colossal Black Spider Queen Orlop towering over the distant forest nest",
+        "obsidian chitin carapace with glowing crimson eye cluster and emerald acid sacs",
+    ],
+    behavior_tokens=[
+        "commands 196 Lv.60 Black Spider Siege Soldiers and 912 Lv.55 Assault Soldiers (1,109 total)",
+        "obliterated on the second shot of the SR Ancient Mana Cannon guided by Damien's All-Seeing Eye",
+    ],
+    threat_description="Commands the 1,109-strong Black Spider army besieging the Forward Base; drops her Mana Core upon death",
+    master_visual_anchor=(
+        "[Boss: Lv.?? Black Spider Queen Orlop, Nightmare Legion Commander Rank 6, colossal arachnid matriarch "
+        "with jagged obsidian carapace, glowing crimson eyes, and glowing emerald venom sacs in the distant forest nest, "
+        "Fortiche Arcane 2.5D dark fantasy style]"
+    ),
+    defeat_mechanic=(
+        "Ken draws swarm outside walls -> Lily tanks battery entrance until MP=0 -> Ash awakens Indomitable Commander "
+        "to cure Damien's despair -> Damien lands fatal 2nd shot with SR Ancient Mana Cannon"
+    ),
+    key_tokens=["Black Spider Queen Orlop", "Lv.??", "Nightmare Legion Commander Rank 6", "Mana Core"],
+)
+
+_SPIDER_SIEGE_SPEC = MonsterSpec(
+    species_id="black_spider_siege",
+    name_en="Black Spider Siege Soldier (Lv.60)",
+    name_ru="\u041e\u0441\u0430\u0434\u043d\u044b\u0439 \u0447\u0451\u0440\u043d\u044b\u0439 \u043f\u0430\u0443\u043a (Lv.60)",
+    tier="Lv.60 Siege Arachnid Artillery (196 units)",
+    category="Long-Range Acid Artillery Swarm",
+    threat_tier="Lv.60 Siege Arachnid",
+    visual_anchors=["bloated emerald-green acid abdomen", "parabolic green acid artillery projectiles melting stone"],
+    behavior_tokens=["196 siege spiders bombarding Forward Base ramparts with corrosive green acid"],
+    threat_description="Melts Forward Base battlements with long-range green acid artillery",
+    master_visual_anchor=(
+        "[Monster: Lv.60 Black Spider Siege Soldier, heavy chitinous arachnid with glowing emerald acid abdomen "
+        "launching corrosive green artillery shells, Fortiche Arcane 2.5D style]"
+    ),
+    key_tokens=["Lv.60", "196 units", "green acid artillery"],
+)
+
+_SPIDER_ASSAULT_SPEC = MonsterSpec(
+    species_id="black_spider_assault",
+    name_en="Black Spider Assault Soldier (Lv.55)",
+    name_ru="\u0428\u0442\u0443\u0440\u043c\u043e\u0432\u043e\u0439 \u0447\u0451\u0440\u043d\u044b\u0439 \u043f\u0430\u0443\u043a (Lv.55)",
+    tier="Lv.55 Assault Arachnid Swarm (912 units)",
+    category="Wall-Scaling Melee Swarm",
+    threat_tier="Lv.55 Assault Arachnid",
+    visual_anchors=["razor scythe legs", "clustered red eyes", "venomous mandibles"],
+    behavior_tokens=["912 assault spiders scaling the Forward Base walls and dropping mana stones when slain"],
+    threat_description="Overwhelms the 200-man garrison through sheer numbers until only 9 survivors remain",
+    master_visual_anchor=(
+        "[Monster: Lv.55 Black Spider Assault Soldier, fast chitinous spider with red eyes and razor mandibles "
+        "scaling burning stone walls, Fortiche Arcane 2.5D style]"
+    ),
+    key_tokens=["Lv.55", "912 units", "mana stones"],
+)
+
+STAGE0_BESTIARY: Dict[str, MonsterSpec] = {
+    "black_spider_queen_orlop": _ORLOP_SPEC,
+    "orlop": _ORLOP_SPEC,
+    "black_spider_siege": _SPIDER_SIEGE_SPEC,
+    "black_spider_assault": _SPIDER_ASSAULT_SPEC,
+}
+FIRST_WAVE_BESTIARY.update(STAGE0_BESTIARY)
+
+ENV_FORWARD_BASE = "forward_base"
+FORWARD_BASE_OUTPOST = EnvironmentSpec(
+    setting_id="forward_base",
+    name_en="Forward Base Outpost (Stage 0 Tutorial)",
+    name_ru="\u041f\u0435\u0440\u0435\u0434\u043e\u0432\u043e\u0439 \u0424\u043e\u0440\u0442 (\u042d\u0442\u0430\u043f 0)",
+    setting_type="Besieged Northern Frontier Outpost Before Crossroads",
+    architecture="Scorched stone ramparts dissolved by green spider acid, stone command bunker, central SR Ancient Mana Cannon battery with a single narrow entrance",
+    weather_and_atmosphere="Night siege transitioning to fiery dawn on March 1st, emerald acid smoke and burning braziers",
+    lighting_model="Fortiche Arcane high-contrast chiaroscuro with emerald acid explosions, golden Flame Skin fire, and cyan Mana Cannon beam",
+    architecture_anchors=[
+        "acid-corroded stone battlements of the Forward Base",
+        "torchlit stone command bunker with tactical map table",
+        "central artillery bastion housing the ornate white-and-gold SR Ancient Mana Cannon with a single narrow doorway",
+    ],
+    atmosphere_anchors=[
+        "emerald-green corrosive acid artillery shells bursting against stone",
+        "1,109 Black Spiders swarming from the northern forest mist",
+        "battlefield littered with glowing mana stones after Queen Orlop's death",
+    ],
+    strategic_zones={
+        "outer_wall": "Held by SSR-Rank Lucas MacGregor and the remnants of the 200-man garrison",
+        "outer_field": "Kill-zone where N-Rank Shield Knight Ken draws aggro and falls in action",
+        "battery_corridor": "Single narrow entrance to the cannon battery blocked by R-Rank Lily with Flame Skin until MP=0",
+        "cannon_bastion": "Central platform where N-Rank Damien fires the SR Ancient Mana Cannon under Ash's Indomitable Commander aura",
+    },
+    master_visual_anchor=(
+        "[Environment: Forward Base Outpost in Stage 0, acid-scorched stone ramparts, torchlit command bunker, "
+        "and central bastion with the ornate white-and-gold SR Ancient Mana Cannon, Fortiche Arcane 2.5D style]"
+    ),
+    key_tokens=["Forward Base", "Stage 0", "Ancient Mana Cannon", "9 survivors", "mana stones"],
+)
+
+STAGE0_ENVIRONMENTS: Dict[str, EnvironmentSpec] = {
+    "forward_base": FORWARD_BASE_OUTPOST,
+    "crossroads_fortress": CROSSROADS_FORTRESS,
+}
+
+get_character_profile = get_character
+get_monster_profile = get_monster
+get_environment_profile = get_environment
+

@@ -1202,3 +1202,90 @@ def validate_ep01_canonical_prompts(shots: Sequence[Dict[str, Any]]) -> Dict[str
         "total_shots_checked": len(shots),
         "errors": errors,
     }
+
+
+# ---------------------------------------------------------------------------
+# Stage 0 (Chapters 001-010 Ranobe / Manhwa Ep 1-2) 3-Act Omni 1.1 Flash Engine
+# ---------------------------------------------------------------------------
+
+STAGE0_CANONICAL_ASH_TOKENS = (
+    "3rd Imperial Prince",
+    "EX-Rank Beginner Commander",
+    "Map Making",
+    "Evil Eye of Command",
+    "Indomitable Commander",
+)
+STAGE0_CANONICAL_LILY_TOKENS = (
+    "R-Rank Fire Attack Mage",
+    "Flame Skin",
+    "turns body into flame to evade blades",
+    "consumes MP",
+)
+STAGE0_CANONICAL_DAMIEN_TOKENS = (
+    "N-Rank Healer Priest",
+    "All-Seeing Eye",
+    "Accuracy +999",
+    "SR Ancient Mana Cannon",
+)
+STAGE0_CANONICAL_KEN_TOKENS = (
+    "N-Rank Shield Knight",
+    "A Petty Thief's Way of Survival",
+    "consumes HP",
+    "silver family locket",
+)
+STAGE0_ALLOWED_VFX_TAGS = {
+    "GREEN_ACID",
+    "FLAME_SKIN",
+    "SOLO_HUD",
+    "MANA_CANNON_BEAM",
+    "GOLD_AURA",
+    "MANA_STONES",
+}
+
+
+def build_ep01_3act_omni_prompt(shot_entry: Dict[str, Any]) -> Dict[str, str]:
+    """Compose a deterministic Omni 1.1 Flash prompt with closed-mouth tail and VFX whitelist."""
+    base_prompt = str(shot_entry.get("omni_visual_prompt", "")).strip()
+    turns = shot_entry.get("dialogue_turns") or []
+    allowed_vfx = set(shot_entry.get("allowed_vfx_tags") or [])
+
+    articulation_clause = ""
+    if turns:
+        speakers = ", ".join(dict.fromkeys(str(t.get("speaker_id", "SPEAKER")) for t in turns))
+        articulation_clause = (
+            f" Expressive facial acting and lip articulation for {speakers}; "
+            "during the final 0.5 seconds of the clip, the speaking character's mouth "
+            "closes cleanly into a neutral resting expression for seamless frame chaining."
+        )
+    else:
+        articulation_clause = (
+            " Pure visual combat and emotional acting with closed or silent mouth posture, "
+            "zero narrator voiceover."
+        )
+
+    positive = (
+        f"Make me a video in a 16:9 aspect ratio using Omni 1.1 Flash: {MASTER_FORTICHE_STYLE_ANCHOR} "
+        f"{base_prompt}{articulation_clause} Fullscreen 16:9 frame with no comic panel borders, "
+        "no speech bubbles, and no rendered text."
+    )
+
+    neg_tokens = [
+        "comic panel borders",
+        "speech bubbles",
+        "subtitles",
+        "watermark",
+        "garbled text",
+        "plastic 3D CGI",
+        "flat 2D cartoon",
+        "distorted anatomy",
+        "extra limbs",
+    ]
+    if not ({"FLAME_SKIN", "GOLD_AURA", "MANA_CANNON_BEAM", "GREEN_ACID", "MANA_STONES"} & allowed_vfx):
+        neg_tokens.extend(["magical energy arcs", "neon blade", "sparks on armor"])
+
+    return {
+        "shot_id": str(shot_entry.get("shot_id", "")),
+        "positive_prompt": positive,
+        "negative_prompt": ", ".join(neg_tokens) + ".",
+    }
+

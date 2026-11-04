@@ -1229,3 +1229,285 @@ def validate_storyboard(
             )
 
     return True
+
+
+# ==============================================================================
+# Stage 0 / 3-Act Episode Manifest Schema & Validator (Chapters 001-010)
+# ==============================================================================
+
+CHARACTER_VOICE_REGISTRY: Dict[str, Dict[str, Any]] = {
+    "ASH": {"voice_id": "Alnilam", "gender": "M", "pitch_semitones": 0.0, "role": "3rd Prince Ash Everblack"},
+    "LUCAS": {"voice_id": "Orus", "gender": "M", "pitch_semitones": -1.0, "role": "Knight Lucas MacGregor"},
+    "LILY": {"voice_id": "Aoede", "gender": "F", "pitch_semitones": 0.0, "role": "Fire Mage Lily"},
+    "DAMIEN": {"voice_id": "Fenrir", "gender": "M", "pitch_semitones": 1.5, "role": "Healer Priest Damien"},
+    "KEN": {"voice_id": "Charon", "gender": "M", "pitch_semitones": -2.0, "role": "Shield Knight Ken"},
+    "EIDER": {"voice_id": "Puck", "gender": "M", "pitch_semitones": 0.5, "role": "Director Eider"},
+    "FOXY": {"voice_id": "Kore", "gender": "F", "pitch_semitones": 1.0, "role": "Stream Viewer Foxy"},
+}
+
+STAGE0_AUTHORIZED_VOICE_IDS: set[str] = {
+    v["voice_id"] for v in CHARACTER_VOICE_REGISTRY.values()
+} | AUTHORIZED_VOICE_PERSONAS
+
+
+@dataclass
+class DialogueTurn:
+    turn_index: int
+    speaker_id: str
+    voice_id: str
+    raw_bookmarked_text: str
+    window_start_sec: float
+    window_end_sec: float
+    emotion_cue: str = "determined"
+
+    @property
+    def text_ru_with_bookmarks(self) -> str:
+        return self.raw_bookmarked_text
+
+    @property
+    def style_prompt(self) -> str:
+        return self.emotion_cue
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "turn_index": self.turn_index,
+            "speaker_id": self.speaker_id,
+            "voice_id": self.voice_id,
+            "raw_bookmarked_text": self.raw_bookmarked_text,
+            "text_ru_with_bookmarks": self.raw_bookmarked_text,
+            "window_start_sec": self.window_start_sec,
+            "window_end_sec": self.window_end_sec,
+            "emotion_cue": self.emotion_cue,
+            "style_prompt": self.emotion_cue,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "DialogueTurn":
+        spk = str(data.get("speaker_id", "ASH")).upper()
+        default_vid = CHARACTER_VOICE_REGISTRY.get(spk, {}).get("voice_id", "Alnilam")
+        txt = str(data.get("raw_bookmarked_text") or data.get("text_ru_with_bookmarks") or "")
+        cue = str(data.get("emotion_cue") or data.get("style_prompt") or "determined")
+        return cls(
+            turn_index=int(data.get("turn_index", 0)),
+            speaker_id=spk,
+            voice_id=str(data.get("voice_id") or default_vid),
+            raw_bookmarked_text=txt,
+            window_start_sec=float(data.get("window_start_sec", 0.2)),
+            window_end_sec=float(data.get("window_end_sec", 4.5)),
+            emotion_cue=cue,
+        )
+
+
+@dataclass
+class StatusWindowSpec:
+    window_type: str
+    theme_color: str
+    header_title: str
+    body_lines: List[str]
+    appear_sec: float = 0.4
+    disappear_sec: float = 5.2
+    rank_badge: Optional[str] = None
+    resource_bar: Optional[Dict[str, Any]] = None
+    screen_anchor: str = "TOP_RIGHT"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "window_type": self.window_type,
+            "theme_color": self.theme_color,
+            "header_title": self.header_title,
+            "body_lines": list(self.body_lines),
+            "appear_sec": self.appear_sec,
+            "disappear_sec": self.disappear_sec,
+            "rank_badge": self.rank_badge,
+            "resource_bar": self.resource_bar,
+            "screen_anchor": self.screen_anchor,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "StatusWindowSpec":
+        return cls(
+            window_type=str(data.get("window_type", "TRAIT_INSPECT")),
+            theme_color=str(data.get("theme_color", "BLUE_CYAN")),
+            header_title=str(data.get("header_title", "")),
+            body_lines=[str(x) for x in (data.get("body_lines") or [])],
+            appear_sec=float(data.get("appear_sec", 0.4)),
+            disappear_sec=float(data.get("disappear_sec", 5.2)),
+            rank_badge=data.get("rank_badge"),
+            resource_bar=data.get("resource_bar"),
+            screen_anchor=str(data.get("screen_anchor", "TOP_RIGHT")),
+        )
+
+
+@dataclass
+class ShotManifestEntry:
+    shot_id: str
+    act_id: int
+    chapter_ref: str
+    duration_sec: float
+    chain_mode: str
+    chain_depth: int
+    start_frame_anchor: str
+    character_sheet_refs: List[str]
+    omni_visual_prompt: str
+    allowed_vfx_tags: List[str] = field(default_factory=list)
+    end_frame_anchor: Optional[str] = None
+    status_window_overlay: Optional[StatusWindowSpec] = None
+    dialogue_turns: List[DialogueTurn] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "shot_id": self.shot_id,
+            "act_id": self.act_id,
+            "chapter_ref": self.chapter_ref,
+            "duration_sec": self.duration_sec,
+            "chain_mode": self.chain_mode,
+            "chain_depth": self.chain_depth,
+            "start_frame_anchor": self.start_frame_anchor,
+            "end_frame_anchor": self.end_frame_anchor,
+            "character_sheet_refs": list(self.character_sheet_refs),
+            "omni_visual_prompt": self.omni_visual_prompt,
+            "allowed_vfx_tags": list(self.allowed_vfx_tags),
+            "status_window_overlay": self.status_window_overlay.to_dict() if self.status_window_overlay else None,
+            "dialogue_turns": [t.to_dict() for t in self.dialogue_turns],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ShotManifestEntry":
+        ov = data.get("status_window_overlay")
+        return cls(
+            shot_id=str(data["shot_id"]),
+            act_id=int(data.get("act_id", 1)),
+            chapter_ref=str(data.get("chapter_ref", "001")),
+            duration_sec=float(data.get("duration_sec", 8.0)),
+            chain_mode=str(data.get("chain_mode", "HARD_ANCHOR_RESET")),
+            chain_depth=int(data.get("chain_depth", 0)),
+            start_frame_anchor=str(data.get("start_frame_anchor", "")),
+            end_frame_anchor=data.get("end_frame_anchor"),
+            character_sheet_refs=[str(x) for x in (data.get("character_sheet_refs") or [])],
+            omni_visual_prompt=str(data.get("omni_visual_prompt", "")),
+            allowed_vfx_tags=[str(x) for x in (data.get("allowed_vfx_tags") or [])],
+            status_window_overlay=StatusWindowSpec.from_dict(ov) if isinstance(ov, dict) else None,
+            dialogue_turns=[DialogueTurn.from_dict(t) for t in (data.get("dialogue_turns") or [])],
+        )
+
+
+@dataclass
+class ActSpec:
+    act_id: int
+    title_ru: str
+    flow_project_name: str
+    bgm_track_path: str
+    shots: List[ShotManifestEntry] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "act_id": self.act_id,
+            "title_ru": self.title_ru,
+            "flow_project_name": self.flow_project_name,
+            "bgm_track_path": self.bgm_track_path,
+            "shots": [s.to_dict() for s in self.shots],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ActSpec":
+        return cls(
+            act_id=int(data["act_id"]),
+            title_ru=str(data.get("title_ru", "")),
+            flow_project_name=str(data.get("flow_project_name", "")),
+            bgm_track_path=str(data.get("bgm_track_path", "")),
+            shots=[ShotManifestEntry.from_dict(s) for s in (data.get("shots") or [])],
+        )
+
+
+@dataclass
+class EpisodeManifest:
+    episode_id: str
+    target_resolution: str
+    target_fps: int
+    audio_sample_rate: int
+    character_voice_registry: Dict[str, Dict[str, Any]]
+    acts: List[ActSpec] = field(default_factory=list)
+
+    def all_shots(self) -> List[ShotManifestEntry]:
+        out: List[ShotManifestEntry] = []
+        for act in self.acts:
+            out.extend(act.shots)
+        return out
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "episode_id": self.episode_id,
+            "target_resolution": self.target_resolution,
+            "target_fps": self.target_fps,
+            "audio_sample_rate": self.audio_sample_rate,
+            "character_voice_registry": dict(self.character_voice_registry),
+            "acts": [a.to_dict() for a in self.acts],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "EpisodeManifest":
+        return cls(
+            episode_id=str(data.get("episode_id", "ttd_ep01_prologue_stage0")),
+            target_resolution=str(data.get("target_resolution", "1280x720")),
+            target_fps=int(data.get("target_fps", 24)),
+            audio_sample_rate=int(data.get("audio_sample_rate", 48000)),
+            character_voice_registry=dict(data.get("character_voice_registry") or CHARACTER_VOICE_REGISTRY),
+            acts=[ActSpec.from_dict(a) for a in (data.get("acts") or [])],
+        )
+
+
+def load_ep01_3act_manifest(path: Union[str, Path] = "config/ep01_3act_manifest.json") -> EpisodeManifest:
+    p = Path(path)
+    if not p.is_file():
+        raise FileNotFoundError(f"3-Act Episode Manifest not found: {path}")
+    data = json.loads(p.read_text(encoding="utf-8"))
+    return EpisodeManifest.from_dict(data)
+
+
+def validate_ep01_3act_manifest(manifest: EpisodeManifest) -> Dict[str, Any]:
+    errors: List[str] = []
+    if len(manifest.acts) != 3:
+        errors.append(f"Expected 3 acts, got {len(manifest.acts)}")
+
+    shots = manifest.all_shots()
+    if not (100 <= len(shots) <= 140):
+        errors.append(f"Expected 100..140 shots, got {len(shots)}")
+
+    for act in manifest.acts:
+        if not act.shots:
+            errors.append(f"Act {act.act_id} has 0 shots")
+            continue
+        if act.shots[0].chain_mode != "HARD_ANCHOR_RESET" or act.shots[0].chain_depth != 0:
+            errors.append(f"Act {act.act_id} first shot {act.shots[0].shot_id} must be HARD_ANCHOR_RESET (depth 0)")
+
+    for idx, s in enumerate(shots, start=1):
+        expected_id = f"SHOT-{idx:03d}"
+        if s.shot_id != expected_id:
+            errors.append(f"Shot index {idx} expected '{expected_id}', got '{s.shot_id}'")
+        if s.chain_depth < 0 or s.chain_depth > 3:
+            errors.append(f"{s.shot_id}: chain_depth={s.chain_depth} exceeds max depth 3")
+        if s.chain_mode == "HARD_ANCHOR_RESET" and s.chain_depth != 0:
+            errors.append(f"{s.shot_id}: HARD_ANCHOR_RESET must have chain_depth=0")
+        if s.chain_mode == "FRAME_CHAIN_LAST_TO_FIRST" and not (1 <= s.chain_depth <= 3):
+            errors.append(f"{s.shot_id}: FRAME_CHAIN_LAST_TO_FIRST must have chain_depth in 1..3")
+
+        for turn in s.dialogue_turns:
+            reg = manifest.character_voice_registry.get(turn.speaker_id)
+            if not reg:
+                errors.append(f"{s.shot_id}: unknown speaker_id '{turn.speaker_id}'")
+            elif turn.voice_id != reg.get("voice_id"):
+                errors.append(
+                    f"{s.shot_id}: speaker {turn.speaker_id} voice_id '{turn.voice_id}' != '{reg.get('voice_id')}'"
+                )
+            if turn.window_end_sec > s.duration_sec - 0.5 + 1e-6:
+                errors.append(
+                    f"{s.shot_id}: turn {turn.turn_index} window_end_sec={turn.window_end_sec} violates 0.5s closed-mouth tail (duration={s.duration_sec})"
+                )
+
+    return {
+        "valid": len(errors) == 0,
+        "total_shots": len(shots),
+        "total_duration_sec": round(sum(s.duration_sec for s in shots), 2),
+        "errors": errors,
+    }
+
