@@ -286,6 +286,9 @@ def main() -> int:
                 )
             )
             return 2
+        if fetched.resolve() != args.out.resolve():
+            args.out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(fetched, args.out)
         res = asyncio.run(verify_cloud_chrome_session(fetched))
         print(json.dumps(res, indent=2, ensure_ascii=False))
         return 0 if res.get("authenticated") else 1
