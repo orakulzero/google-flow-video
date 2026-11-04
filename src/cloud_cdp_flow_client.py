@@ -574,6 +574,7 @@ class CloudCDPFlowClient:
         payload = load_flow_cookies_payload(self.cookies_json_path)
         cookies = payload.get("cookies") or []
         if cookies:
+            await self._page.send("Network.clearBrowserCookies")
             for c in cookies:
                 if not c.get("name") or c.get("value") is None:
                     continue
@@ -599,6 +600,21 @@ class CloudCDPFlowClient:
 
         return self
 
+    async def refresh_session_heartbeat(self, return_url: Optional[str] = None) -> None:
+        """Visit myaccount.google.com briefly so Google's RotateCookiesPage rotates __Secure-1PSIDTS before its 2h TTL."""
+        if not self._page:
+            return
+        prev_url = return_url or str(self._page.url or "")
+        try:
+            await self._page.goto("https://myaccount.google.com/", wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(4.0)
+            if prev_url and prev_url.startswith("https://flow.google.com/project/"):
+                await self._page.goto(prev_url, wait_until="domcontentloaded", timeout=45000)
+                await asyncio.sleep(4.5)
+            await self.persist_rotated_cookies()
+        except Exception:
+            pass
+
     async def persist_rotated_cookies(self) -> None:
         """Save rotated browser cookies (such as __Secure-1PSIDTS) back to flow_session_cookies.json when authenticated."""
         if not self._page:
@@ -611,12 +627,13 @@ class CloudCDPFlowClient:
             live_cookies = res.get("cookies") or []
             if len(live_cookies) < 15:
                 return
-            target = self.cookies_json_path or DEFAULT_FLOW_COOKIES_PATHS[0]
-            existing = load_flow_cookies_payload(target)
-            existing["cookies"] = live_cookies
-            existing["cookie_count"] = len(live_cookies)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(existing, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            for target in DEFAULT_FLOW_COOKIES_PATHS:
+                if target == DEFAULT_FLOW_COOKIES_PATHS[0] or target.is_file():
+                    existing = load_flow_cookies_payload(target)
+                    existing["cookies"] = live_cookies
+                    existing["cookie_count"] = len(live_cookies)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text(json.dumps(existing, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         except Exception:
             pass
 

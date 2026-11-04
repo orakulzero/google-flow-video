@@ -420,10 +420,12 @@ async def render_act_from_manifest(
         if hasattr(client, "persist_rotated_cookies"):
             await client.persist_rotated_cookies()
 
+        newly_rendered_count = 0
         for idx, shot in enumerate(shots_to_process, 1):
             out_mp4 = clips_dir / f"{shot.shot_id}_omni.mp4"
             if out_mp4.is_file() and out_mp4.stat().st_size > 2_000_000:
-                cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
+                if not (ROOT_DIR / ".scene_cache" / f"{shot.shot_id}_last.jpg").is_file():
+                    cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
                 rendered_paths.append(out_mp4)
                 _log(
                     f"[{idx}/{len(shots_to_process)}] Reusing verified {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)"
@@ -469,7 +471,10 @@ async def render_act_from_manifest(
                     await save_native_video(page, vid_src, vid_uuid, out_mp4)
                     sanitize_flow_clip_cuts(out_mp4, target_dur=shot.duration_sec)
                     cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
-                    if hasattr(client, "persist_rotated_cookies"):
+                    newly_rendered_count += 1
+                    if hasattr(client, "refresh_session_heartbeat") and newly_rendered_count % 4 == 0:
+                        await client.refresh_session_heartbeat(PROJECT_URL)
+                    elif hasattr(client, "persist_rotated_cookies"):
                         await client.persist_rotated_cookies()
                     rendered_paths.append(out_mp4)
                     _log(f"[Flow Omni 1.1 Flash] Rendered {shot.shot_id} -> {out_mp4.name} ({out_mp4.stat().st_size // 1024} KB)")
