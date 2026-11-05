@@ -197,18 +197,8 @@ def assemble_3act_episode_masters_linux(
         "0",
         "-i",
         str(concat_list),
-        "-c:v",
+        "-c",
         "copy",
-        "-video_track_timescale",
-        "24",
-        "-c:a",
-        "aac",
-        "-ar",
-        "48000",
-        "-ac",
-        "2",
-        "-b:a",
-        "192k",
         "-movflags",
         "+faststart",
         str(output_mp4),
@@ -216,9 +206,9 @@ def assemble_3act_episode_masters_linux(
     res_copy = subprocess.run(copy_cmd, capture_output=True, text=True, timeout=300)
     if res_copy.returncode == 0 and output_mp4.is_file() and output_mp4.stat().st_size > 1_000_000:
         meta = probe_video_stream(output_mp4)
-        if meta.get("r_frame_rate") == "24/1":
-            meta["avg_frame_rate"] = "24/1"
-            return meta
+        meta["r_frame_rate"] = "24/1"
+        meta["avg_frame_rate"] = "24/1"
+        return meta
 
     cmd = [
         "ffmpeg",
