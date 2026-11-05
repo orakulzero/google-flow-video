@@ -472,7 +472,8 @@ async def render_act_from_manifest(
                     sanitize_flow_clip_cuts(out_mp4, target_dur=shot.duration_sec)
                     cache.extract_and_cache_last_frame(shot.shot_id, out_mp4)
                     newly_rendered_count += 1
-                    if hasattr(client, "refresh_session_heartbeat") and newly_rendered_count % 4 == 0:
+                    shot_num = int(shot.shot_id.split("-")[-1])
+                    if hasattr(client, "refresh_session_heartbeat") and shot_num % 9 == 0:
                         await client.refresh_session_heartbeat(PROJECT_URL)
                     elif hasattr(client, "persist_rotated_cookies"):
                         await client.persist_rotated_cookies()

@@ -202,7 +202,7 @@ def push_session_to_drive_or_bridge(local_json: Path) -> list[str]:
 
 
 def fetch_flow_cookies_from_drive(dest_json: Path) -> Path | None:
-    """Download flow_session_cookies.json from Google Drive 04_flow_session_state on the Cloud VM."""
+    """Download the newest flow_session_cookies.json from Google Drive 04_flow_session_state on the Cloud VM."""
     gdrive_bin = shutil.which("gdrive") or "/opt/antigravity/bin/gdrive"
     res = subprocess.run(
         [gdrive_bin, "readonly", "ls", DRIVE_FLOW_STATE_FOLDER_ID, "--json"],
@@ -213,18 +213,33 @@ def fetch_flow_cookies_from_drive(dest_json: Path) -> Path | None:
     if res.returncode == 0 and res.stdout.strip():
         try:
             items = json.loads(res.stdout)
+            best_payload: dict[str, Any] | None = None
+            best_ts = ""
             for item in items:
                 name = str(item.get("name", ""))
                 fid = str(item.get("id", ""))
                 if name in (COOKIES_FILENAME, "cookies.json", "flow_cookies.json") and fid:
+                    tmp_cand = dest_json.with_suffix(f".{fid[:8]}.tmp.json")
                     dest_json.parent.mkdir(parents=True, exist_ok=True)
                     subprocess.run(
-                        [gdrive_bin, "readonly", "download", fid, "--out", str(dest_json)],
+                        [gdrive_bin, "readonly", "download", fid, "--out", str(tmp_cand)],
                         check=False,
                         capture_output=True,
                     )
-                    if dest_json.is_file() and dest_json.stat().st_size > 100:
-                        return dest_json
+                    if tmp_cand.is_file() and tmp_cand.stat().st_size > 100:
+                        try:
+                            data = json.loads(tmp_cand.read_text(encoding="utf-8"))
+                            ts = str(data.get("exported_at_utc", "")) if isinstance(data, dict) else ""
+                            if best_payload is None or ts >= best_ts:
+                                best_payload = data
+                                best_ts = ts
+                        except Exception:
+                            pass
+                        finally:
+                            tmp_cand.unlink(missing_ok=True)
+            if best_payload is not None:
+                dest_json.write_text(json.dumps(best_payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+                return dest_json
         except Exception:
             pass
     if dest_json.is_file() and dest_json.stat().st_size > 100:

@@ -604,14 +604,25 @@ class CloudCDPFlowClient:
         """Visit myaccount.google.com briefly so Google's RotateCookiesPage rotates __Secure-1PSIDTS before its 2h TTL."""
         if not self._page:
             return
-        prev_url = return_url or str(self._page.url or "")
+        prev_url = return_url if return_url is not None else str(self._page.url or "")
         try:
             await self._page.goto("https://myaccount.google.com/", wait_until="domcontentloaded", timeout=30000)
-            await asyncio.sleep(4.0)
+            await asyncio.sleep(4.5)
+            cur = str(self._page.url or "")
+            if "myaccount.google.com" in cur and "signin" not in cur and "ServiceLogin" not in cur:
+                res = await self._page.send("Network.getAllCookies")
+                live_cookies = res.get("cookies") or []
+                if len(live_cookies) >= 15:
+                    for target in DEFAULT_FLOW_COOKIES_PATHS:
+                        if target == DEFAULT_FLOW_COOKIES_PATHS[0] or target.is_file():
+                            existing = load_flow_cookies_payload(target)
+                            existing["cookies"] = live_cookies
+                            existing["cookie_count"] = len(live_cookies)
+                            target.parent.mkdir(parents=True, exist_ok=True)
+                            target.write_text(json.dumps(existing, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             if prev_url and prev_url.startswith("https://flow.google.com/project/"):
                 await self._page.goto(prev_url, wait_until="domcontentloaded", timeout=45000)
                 await asyncio.sleep(4.5)
-            await self.persist_rotated_cookies()
         except Exception:
             pass
 

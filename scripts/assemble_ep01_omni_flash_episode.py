@@ -385,7 +385,7 @@ def _synth_google_translate_persona_wav(
     return out_wav
 
 
-_GEMINI_TTS_REACHABLE: Optional[bool] = None
+_GEMINI_TTS_REACHABLE: Optional[bool] = False
 
 
 async def synth_dialogue_turn_voice(
@@ -788,6 +788,8 @@ async def assemble_3act_episode_from_manifest(
                     work_dir=work_dir,
                     fast_copy_without_hud=True,
                 )
+            if global_shot_idx % 10 == 0 or global_shot_idx == 120:
+                print(f"[3-Act] Prepared {global_shot_idx}/120 dubbed shots (latest: {dubbed_mp4.name})...", flush=True)
 
             act_shot_mp4s.append(dubbed_mp4)
             flow_scenes.append(
@@ -841,8 +843,11 @@ async def assemble_3act_episode_from_manifest(
                 hud_audit_entries.append((hdr, sub, mid_jpg))
 
         act_master = out_dir / f"ttd_ep01_act{act.act_id}_master.mp4"
-        print(f"[3-Act] Assembling Act {act.act_id} Master ({len(act_shot_mp4s)} shots -> {act_master.name})...", flush=True)
-        assemble_act_master(act.act_id, act_shot_mp4s, bgm_map[act.act_id], act_master)
+        if not act_master.is_file() or act_master.stat().st_size < 20_000_000:
+            print(f"[3-Act] Assembling Act {act.act_id} Master ({len(act_shot_mp4s)} shots -> {act_master.name})...", flush=True)
+            assemble_act_master(act.act_id, act_shot_mp4s, bgm_map[act.act_id], act_master)
+        else:
+            print(f"[3-Act] Reusing Act {act.act_id} Master {act_master.name} ({act_master.stat().st_size // (1024 * 1024)} MB)...", flush=True)
         act_masters.append(act_master)
 
     master_3act_mp4 = out_dir / "ttd_episode_01_3act_omni_flash_ru.mp4"
